@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans&family=IBM+Plex+Sans+Condensed&display=swap');
+
+body {--f7-font-family: 'IBM Plex Sans', sans-serif;}
+
+table td, table tr, table th{background: transparent !important;}
+
+.valuetable {
+  color: #ffffff;
+  font-family: 'IBM Plex Sans Condensed',sans-serif;
+}

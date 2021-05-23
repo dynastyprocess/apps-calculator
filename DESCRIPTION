@@ -1,0 +1,32 @@
+Package: DynastyProcess_TradeCalculator
+Title: A Customizable Dynasty Trade Calculator
+Version: 3.0.0.01
+Authors@R: 
+    person(given = "Tan",
+           family = "Ho",
+           role = c("aut", "cre"),
+           email = "tan@tanho.ca",
+           comment = c(ORCID = "0000-0001-8388-5155"))
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Imports: 
+    arrow,
+    dplyr (> 1.0.0),
+    DT,
+    glue,
+    joker,
+    lubridate,
+    magrittr,
+    mobileCharts,
+    purrr,
+    sever,
+    shiny,
+    shinyMobile (> 1.0.0),
+    tidyr,
+    uuid
+Remotes: 
+    tanho63/joker,
+    RinteRface/shinyMobile
