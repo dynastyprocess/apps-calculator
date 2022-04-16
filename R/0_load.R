@@ -19,6 +19,7 @@ suppressPackageStartupMessages({
   library(mobileCharts) # rinterface/mobileCharts
   library(sever) # johncoene/sever
   library(joker) # tanho63/joker
+  library(metathis)
 
 })
 

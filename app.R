@@ -5,8 +5,20 @@ picks_raw <- read_parquet('data/picks_raw.parquet')
 ui <- ui_mainpage(
   f7TabLayout(
     use_sever(),
+    shinyjs::useShinyjs(),
+    meta() %>%
+      meta_social(
+        title = "Trade Calculator - DynastyProcess.com",
+        description = "A dynasty trade calculator that you can customize for your strategy and league!",
+        url = "https://apps.dynastyprocess.com/calculator",
+        image = "header_small.png",
+        image_alt = "DynastyProcess Calculator logo",
+        twitter_creator = "@_TanHo",
+        twitter_card_type = "summary",
+        twitter_site = "@DynastyProcess"
+      ),
     includeCSS("www/dp.css"),
-    addcss_transparentDT(),
+    # addcss_transparentDT(),
     navbar = ui_header(),
     panels = ui_sidebar(),
     appbar = NULL,
@@ -17,100 +29,57 @@ ui <- ui_mainpage(
              tabName = "Inputs",
              icon = f7Icon('wand_stars'),
              active = TRUE,
-             br(),
-             h1("Main Inputs", style = "text-align:center"),
+             # h1("Main Inputs", style = "text-align:center"),
              uiOutput('team_inputs'),
-             f7Card(title = 'Customize Value Settings',
-                    f7Row(
-                      f7SmartSelect(
-                        'qb_type',
-                        label = 'QB Type',
-                        openIn = "sheet",
-                        choices = c('1QB', '2QB/SF')
-                      ),
-                      f7SmartSelect(
-                        'teams',
-                        label = 'Teams',
-                        openIn = "sheet",
-                        choices = glue("{seq(6,24,2)} teams"),
-                        selected = "12 teams"
-                      ),
-                      f7SmartSelect(
-                        'draft_type',
-                        label = "Display Mode",
-                        openIn = "sheet",
-                        choices = c('Normal',
-                                    'Startup (Players & Picks)',
-                                    'Startup (Players Only)')
-                      )
-                    ),
-                    f7Slider(
-                      'value_factor',
-                      "Valuation Factor",
-                      min = 210,
-                      max = 260,
-                      value = 235,
-                      step = 5,
-                      labels = tagList(
-                        f7Icon("square_stack_3d_up_fill"),
-                        f7Icon("star_circle_fill")
-                      )
-                    ),
-                    f7Slider(
-                      'rookie_optimism',
-                      'Rookie Optimism',
-                      min = 0,
-                      max = 100,
-                      value = 80,
-                      step = 5,
-                      labels = tagList(
-                        f7Icon("bolt_slash_fill"),
-                        f7Icon("bolt_fill")
-                      )
-                    ),
-                    f7Slider(
-                      'future_factor',
-                      'Future Pick Value',
-                      min = 65,
-                      max = 95,
-                      value = 80,
-                      step = 5,
-                      labels = tagList(
-                        f7Icon("play_fill"),
-                        f7Icon("forward_fill")
-                      )
-                    ),
-                    br(),
-                    f7Button(
-                      'toggle_inputhelp',
-                      label = "Help",
-                      shadow = TRUE,
-                      size = 'small',
-                      rounded = TRUE
-                    )
-             ),
+             br(),
+             dpcalc_inputs(),
              ui_spacer()
       ),
       f7Tab( # analysis tab ----
              tabName = "Analysis",
              icon = f7Icon('graph_circle_fill'),
              h1("Trade Analysis", style = 'text-align:center;'),
+             div(
+               id = "analysis_placeholder",
+               f7Card("Press Calculate to load the analysis!")
+             ),
+             shinyjs::hidden(
+               div(
+                 style = "text-align:center;",
+                 id = "gauge_div",
+                 f7Card(
+                   inset = TRUE,
+                   f7Gauge(id = 'score',
+                           type = 'semicircle',
+                           value = 50,
+                           borderBgColor = '#1b7837',
+                           borderColor = '#762a83',
+                           labelFontSize = '18'
+                   )
+                 )
+               )
+             ),
              uiOutput('results_tab'),
              ui_spacer()
       ),
       f7Tab(tabName = "Values", # values tab ----
             icon = f7Icon('square_favorites_fill'),
             h1('Values - Quick Reference', style = 'text-align:center;'),
+            f7Card(
+              f7Text("value_search",label = NULL,placeholder = "Search:"),
+              inset = TRUE),
             uiOutput('values'),
             ui_spacer()
       ),
       f7Tab(tabName = "About", # about tab ----
             icon = f7Icon('info_circle_fill'),
             br(),
-            div(img(src = 'icons/128x128.png'), style = 'text-align:center;'),
+            div(img(src = 'https://github.com/dynastyprocess/graphics/raw/main/.dynastyprocess/dp_hex.svg',style = 'max-width: 128px'), style = 'text-align:center;'),
             br(),
             f7Card(title = "About",
                    includeMarkdown('www/about.md')),
+            br(),
+            dp_donations(),
             br(),
             f7Card(glue(
               "ECR last updated: {players_raw$scrape_date[[1]]}"
@@ -120,14 +89,6 @@ ui <- ui_mainpage(
               title = "More by DynastyProcess:",
               f7List(
                 inset = TRUE,
-                # f7ListItem(title = "Desktop Version",
-                #            url = "https://apps.dynastyprocess.com/calculator",
-                #            media = f7Icon('number_circle_fill',old = FALSE)),
-                f7ListItem(
-                  title = "Crystal Ball",
-                  media = f7Icon('moon_circle_fill'),
-                  url = "https://apps.dynastyprocess.com/crystalball"
-                ),
                 f7ListItem(
                   title = "Twitter",
                   media = f7Icon('logo_twitter'),
@@ -188,8 +149,8 @@ server <- function(input, output, session) {
                    expandInput = TRUE,
                    typeahead = FALSE,
                    choices = values()$Player,
-                   value = character()
-                   # value = values()$Player[sample(1:32,1)]
+                   # value = character()
+                   value = values()$Player[sample(1:32,1)]
     )})
 
   output$teamBinput <- renderUI({
@@ -199,8 +160,8 @@ server <- function(input, output, session) {
                    expandInput = TRUE,
                    typeahead = FALSE,
                    choices = values()$Player,
-                   value = character()
-                   # value = values()$Player[sample(1:32,1)]
+                   # value = character()
+                   value = values()$Player[sample(1:32,1)]
     )})
 
   output$teamA_list <- renderUI({
@@ -278,69 +239,30 @@ server <- function(input, output, session) {
     {0}
   })
 
-  output$trade_gauge <- renderUI({
+  observeEvent(input$calculate,{
+    shinyjs::hide(id = "analysis_placeholder")
+    shinyjs::show(id = "gauge_div")
 
     gauge_value <- if(teamA_total() > teamB_total()){50+percent_diff()/2} else {50-percent_diff()/2}
 
-    x <- f7Gauge('score',type = 'semicircle', value = gauge_value,
-            borderBgColor = '#1b7837',
-            borderColor = '#762a83',
-            valueText = paste0(percent_diff(),'%'),
-            valueTextColor = case_when(teamA_total() == teamB_total() ~ '#ffffff',
-                                       percent_diff() <=5 ~ '#ffffff',
-                                       teamA_total() > teamB_total() ~ '#762a83',
-                                       teamA_total() < teamB_total() ~ '#1b7837',),
-            labelText = case_when(teamA_total() == teamB_total() ~ 'Trade is equal!',
-                                  percent_diff() <=5 ~ 'Trade is ~ fair!',
-                                  teamA_total() > teamB_total() ~ 'in favour of Team A',
-                                  teamA_total() < teamB_total() ~ 'in favour of Team B'),
-            labelFontSize = '18'
+    updateF7Gauge(
+      id = "score",
+      value = gauge_value,
+      valueText = paste0(percent_diff(),'%'),
+      valueTextColor = case_when(teamA_total() == teamB_total() ~ '#ffffff',
+                                 percent_diff() <=5 ~ '#ffffff',
+                                 teamA_total() > teamB_total() ~ '#762a83',
+                                 teamA_total() < teamB_total() ~ '#1b7837',),
+      labelText = case_when(teamA_total() == teamB_total() ~ 'Trade is equal!',
+                            percent_diff() <=5 ~ 'Trade is ~ fair!',
+                            teamA_total() > teamB_total() ~ 'in favour of Team A',
+                            teamA_total() < teamB_total() ~ 'in favour of Team B'),
     )
 
-    return(x)
   })
 
   output$teamA_total <- renderText({ paste("Team A total:",format(teamA_total(),big.mark = ',')) })
   output$teamB_total <- renderText({ paste("Team B total:",format(teamB_total(),big.mark = ',')) })
-
-  value_container <- withTags(
-    table(class = "compact row-border",
-          thead(tr(
-            th(style="text-align:left;","Player"),
-            th(style="text-align:right;padding-right:3px;","Age"),
-            th(style='text-align:right;padding-right:3px;',"Value")
-          ))
-    )
-  )
-
-  output$teamA_valuetable <- renderDT({
-    teamA_values() %>%
-      datatable(class = "valuetable compact row-border",
-                container = value_container,
-                selection = 'none',
-                options = list(searching = FALSE,
-                               scrollX = TRUE,
-                               columnDefs = list(list(className = 'dt-left', targets = 0),
-                                                 list(className = 'dt-right', targets = -1)),
-                               ordering = FALSE,
-                               paging = FALSE,
-                               info = FALSE),
-                rownames = FALSE)
-  })
-  output$teamB_valuetable <- renderDT({
-    teamB_values() %>%
-      datatable(class = "valuetable compact row-border",
-                container = value_container,
-                selection = 'none',
-                options = list(searching = FALSE,
-                               scrollX = TRUE,
-                               columnDefs = list(list(className = 'dt-left', targets = 0),
-                                                 list(`text-align` = 'right', targets = c(1,2))),
-                               ordering = FALSE,
-                               paging = FALSE,
-                               info = FALSE),
-                rownames = FALSE)
-  })
 
   output$trade_plot <- render_mobile({
 
@@ -374,84 +296,64 @@ server <- function(input, output, session) {
 
   output$tradewizard <- renderUI({
 
-    req(percent_diff()>5|is.infinite(percent_diff()))
+    req(percent_diff()>5 | is.infinite(percent_diff()))
 
-    f7Card(title = "Trade Wizard", inset = TRUE,
-           "These players might help balance out the trade!",
-           DTOutput('tradewizard_table')
+    trade_diff <- abs(teamA_total()-teamB_total())
+
+    tradebalancer_table <- values() %>%
+      filter(Value<=(trade_diff*1.05),Value>=(trade_diff*0.95))
+
+    tagList(
+      f7Card(title = "Trade Wizard", inset = TRUE,
+             "These players might help balance out the trade!"),
+      f7Table(tradebalancer_table,card = TRUE)
     )
   })
 
-  output$results_tab <- renderUI({
+output$results_tab <- renderUI({
 
-    validate(need(input$calculate,message = "Please press Calculate to load the analysis!"))
+  req(input$calculate)
 
-    div(
-      f7Card(
-        div(uiOutput('trade_gauge',height = '250px'),style = 'text-align:center;'),inset= TRUE),
+  div(
+    f7Card(div(textOutput('teamA_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
+    f7Table(teamA_values(),card = TRUE),
+    f7Card(div(textOutput('teamB_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
+    f7Table(teamB_values(),card = TRUE),
+    dp_donations(),
+    f7Card(title = "Trade Plot", inset = TRUE, mobileOutput('trade_plot')),
+    uiOutput('tradewizard'),
+    ui_spacer()
+  )
+})
 
-      f7Card(title = textOutput('teamA_total'), inset = TRUE,
-             DTOutput('teamA_valuetable')
-      ),
-      f7Card(title = textOutput('teamB_total'), inset = TRUE,
-             DTOutput('teamB_valuetable')
-      ),
-      f7Card(title = "Trade Plot",inset = TRUE,
-             mobileOutput('trade_plot')
-      ),
-      uiOutput('tradewizard'),
-      br(),
-      br(),
-      br(),
-      br(),
-      br()
-    )
-  })
+observeEvent(input$calculate,{
+  updateF7Tabs(session, id = 'tabs', selected = 'Analysis')
+})
 
-  observeEvent(input$calculate,{
-    updateF7Tabs(session, id = 'tabs', selected = 'Analysis')
-  })
+# values tab ----
 
-  # values tab ----
-  # output$values_table <- renderDT({
-  #   values() %>%
-  #     datatable(class = "valuetable compact row-border",
-  #               container = value_container,
-  #               selection = 'none',
-  #               # filter = "top",
-  #               options = list(searching = FALSE,
-  #                              ordering = FALSE,
-  #                              # columnDefs = list()
-  #                              paging = FALSE,
-  #                              info = FALSE),
-  #               rownames = FALSE)
-  # })
+value_display <- reactive({
+  if(is.null(input$value_search)) return(values())
+  values() %>%
+    dplyr::filter(str_detect(tolower(Player),tolower(input$value_search)))
+})
 
+output$values <- renderUI({
+  div(
+    f7Table(value_display(),card = TRUE),
+    ui_spacer()
+  )
+})
 
-  output$values <- renderUI({
+# show last updated ----
 
-    # validate(need(input$calculate,message = "Please press Calculate to load the Values table!"))
+f7Toast(
+  session = session,
+  text = glue("ECR last updated {players_raw$scrape_date[[1]]}"),
+  position = "center",
+  closeTimeout = 1000)
 
-    div(
-      # f7Card(DTOutput('values_table')),
-      f7Table(values(),card = TRUE),
-      br(),
-      br(),
-      br(),
-      br(),
-      br()
-    )
-  })
-
-  # show last updated ----
-
-  f7Toast(
-    session = session,
-    text = glue("ECR last updated {players_raw$scrape_date[[1]]}"),
-    position = "center",
-    closeTimeout = 1000)
-
-  # Save data to a sqlite file on server ----
+# Save data to a sqlite file on server ----
 
   sessionID <- UUIDgenerate(1)
 

@@ -20,7 +20,7 @@ ui_mainpage <- function(...){
           options = list(
             dark = TRUE,
             theme = 'md',
-            color = '#d31027',
+            color = '#d7283c',#ed122b
             tapHold = FALSE,
             navbar = list()
           ),
@@ -30,7 +30,7 @@ ui_mainpage <- function(...){
 
 ui_header <- function(){
   f7Navbar(# Navbar ----
-           title = div(img(src = 'icons/header_small.png',style = "max-width:90%;max-height:50px;"),
+           title = div(img(src = 'icons/header_small.png',style = "max-width:90%;max-height:50px;display:flex;align-items:center;"),
                        style = "text-align:center;"),
            # subtitle = "Trade Calculator",
            transparent = TRUE,
@@ -98,4 +98,80 @@ ui_sidebar <- function(){
 
 ui_spacer <- function(){
   div(br(),br(),br(),br(),br())
+}
+
+dpcalc_inputs <- function(){
+  f7Card(title = 'Customize Value Settings',
+         f7Row(
+           f7SmartSelect(
+             'qb_type',
+             label = 'QB Type',
+             openIn = "sheet",
+             choices = c('1QB', '2QB/SF')
+           ),
+           f7SmartSelect(
+             'teams',
+             label = 'Teams',
+             openIn = "sheet",
+             choices = glue("{seq(6,24,2)} teams"),
+             selected = "12 teams"
+           ),
+           f7SmartSelect(
+             'draft_type',
+             label = "Startup Mode",
+             openIn = "sheet",
+             choices = c('Normal',
+                         'Startup (Players & Picks)',
+                         'Startup (Players Only)')
+           )
+         ),
+         f7Slider(
+           'value_factor',
+           "Valuation Factor",
+           min = 185,
+           max = 260,
+           value = 235,
+           step = 5,
+           labels = tagList(
+             f7Icon("square_stack_3d_up_fill"),
+             f7Icon("star_circle_fill")
+           )
+         ),
+         f7Slider(
+           'rookie_optimism',
+           'Rookie Optimism',
+           min = 0,
+           max = 100,
+           value = 60,
+           step = 5,
+           labels = tagList(
+             f7Icon("bolt_slash_fill"),
+             f7Icon("bolt_fill")
+           )
+         ),
+         f7Slider(
+           'future_factor',
+           'Future Pick Value',
+           min = 65,
+           max = 95,
+           value = 80,
+           step = 5,
+           labels = tagList(
+             f7Icon("play_fill"),
+             f7Icon("forward_fill")
+           )
+         ),
+         br(),
+         f7Button(
+           'toggle_inputhelp',
+           label = "Help",
+           shadow = TRUE,
+           size = 'small',
+           rounded = TRUE
+         )
+  )
+}
+
+dp_donations <- function(){
+  div(style = "text-align:center;",f7Link(label = img(src="https://cdn.ko-fi.com/cdn/kofi4.png?v=3",style = "border:0px;height:50px;"), href = "https://ko-fi.com/M4M83XE0K"))
 }

@@ -1,6 +1,6 @@
 Package: DynastyProcess_TradeCalculator
 Title: A Customizable Dynasty Trade Calculator
-Version: 3.0.0.01
+Version: 2.99.0.01
 Authors@R: 
     person(given = "Tan",
            family = "Ho",
@@ -25,8 +25,11 @@ Imports:
     sever,
     shiny,
     shinyMobile (> 1.0.0),
+    shinyjs,
     tidyr,
     uuid
 Remotes: 
     tanho63/joker,
     RinteRface/shinyMobile
+URL: https://github.com/dynastyprocess/DynastyProcess_TradeCalculator
+BugReports: https://github.com/dynastyprocess/DynastyProcess_TradeCalculator/issues

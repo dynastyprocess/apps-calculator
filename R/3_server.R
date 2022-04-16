@@ -169,7 +169,7 @@ sever_joke <- function(){
         "Reload",
         style = "color:#000;background-color:#fff;",
         class = "button button-raised",
-        onClick = "location.reload();"
+        onClick = "Shiny.shinyapp.reconnect();"
       )
     ),
     bg_color = "#000"

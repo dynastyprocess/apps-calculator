@@ -1,4 +1,4 @@
-# DynastyProcess Trade Calculator v3.0
+# DynastyProcess Trade Calculator v3.0.0
 
 Calculator to-do
 
@@ -8,15 +8,14 @@ Calculator to-do
 -   switch fonts [Done!]
 -   trade details delete [Done!]
 -   automatically toggle superflex on when \>16 teams are selected [Done!]
--   improve the values quick-reference table
+-   improve the values quick-reference table [Done!]
 -   revisit help text
 
 ## Major features
 
 #### shinyMobile package updates
 
--   trade gauge
--   other things
+-   trade gauge [Done]
 -   potential for a separate desktop UI layout
 
 #### Donations
@@ -34,5 +33,4 @@ Calculator to-do
 #### Roll separate Google Analytics alternative
 
 (i.e. Fathom, or Plausible, or Matomo)
-
 -   add privacy policy + something GDPR for analytics
