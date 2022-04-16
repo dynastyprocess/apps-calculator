@@ -1,6 +1,6 @@
 Package: DynastyProcess_TradeCalculator
 Title: A Customizable Dynasty Trade Calculator
-Version: 2.99.0.01
+Version: 3.0.0
 Authors@R: 
     person(given = "Tan",
            family = "Ho",
@@ -15,8 +15,8 @@ RoxygenNote: 7.1.1
 Imports: 
     arrow,
     dplyr (> 1.0.0),
+    glouton,
     glue,
-    gluoton
     joker,
     lubridate,
     magrittr,
@@ -32,5 +32,5 @@ Remotes:
     tanho63/joker,
     RinteRface/shinyMobile,
     colinfay/glouton
-URL: https://github.com/dynastyprocess/DynastyProcess_TradeCalculator
-BugReports: https://github.com/dynastyprocess/DynastyProcess_TradeCalculator/issues
+URL: https://github.com/dynastyprocess/apps-calculator
+BugReports: https://github.com/dynastyprocess/apps-calculator/issues
