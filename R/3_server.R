@@ -157,7 +157,8 @@ gen_df_values <- function(players_raw, picks_raw,
     rowid_to_column(var='pick') %>%
     mutate(startup_round = (pick %/% l_s)+1,
            startup_pick = round(pick %% l_s,0),
-           player = paste0("Startup Pick ",startup_round,".",str_pad(startup_pick,2,'left',0))) %>%
+           player = paste0("Startup Pick ",startup_round,".",str_pad(startup_pick,2,'left',0)),
+           age = NA) %>%
     bind_rows(df) %>%
     arrange(desc(value),player)
 }
@@ -173,8 +174,8 @@ sever_joke <- function(){
         "Reload",
         style = "color:#000;background-color:#fff;",
         class = "button button-raised",
-        onClick = "Shiny.shinyapp.reconnect();" # for future allowReconnect ish things?
-        # onClick = "location.reload()"
+        # onClick = "Shiny.shinyapp.reconnect();" # for future allowReconnect ish things?
+        onClick = "location.reload()"
       )
     ),
     bg_color = "#000"

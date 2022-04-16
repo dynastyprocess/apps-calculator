@@ -17,5 +17,6 @@ suppressPackageStartupMessages({
   library(metathis)
   library(glouton)
 
+  options(dplyr.summarise.inform = FALSE)
 })
 

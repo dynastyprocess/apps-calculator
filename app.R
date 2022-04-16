@@ -143,7 +143,7 @@ server <- function(input, output, session) {
                   c('Player','Age','Value'))
   })
 
-  # values <- debounce(values, 1000)
+  values <- debounce(values, 500)
 
   # Render input fields ----
 
@@ -335,8 +335,8 @@ server <- function(input, output, session) {
   f7Toast(
     session = session,
     text = glue("ECR last updated {players_raw$scrape_date[[1]]}"),
-    position = "center",
-    closeTimeout = 1000)
+    position = "bottom",
+    closeTimeout = 3000)
 
   # Save data to a sqlite file on server ----
 
@@ -367,8 +367,7 @@ server <- function(input, output, session) {
       teamB_total = teamB_total()
     )
 
-    fp <- fs::dir_create(file.path("storage",format(Sys.time(),format = "%Y_%m")))
-    arrow::write_parquet(saved_data,file.path(fp,paste0(tradeID,".parquet")))
+    arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet")))
   })
 
   observeEvent(
