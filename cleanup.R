@@ -5,6 +5,7 @@ suppressPackageStartupMessages({
   library(httr)
   library(glue)
   library(piggyback)
+  setwd(here::here())
 })
 
 cleanup <- function(){

@@ -4,6 +4,7 @@ suppressPackageStartupMessages({
   library(fs)
   library(httr)
   library(glue)
+  setwd(here::here())
 })
 
 update_local_values <- function(){
