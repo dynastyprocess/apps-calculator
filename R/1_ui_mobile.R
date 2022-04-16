@@ -39,7 +39,7 @@ ui_header <- function(){
 
 ui_sidebar <- function(){
   tagList(f7Panel( # Sidebar panels (currently a help panel) ----
-                   # inputId = "panel_left",
+                   id = "panel_left",
                    title = "Trade Calculator Help",
                    side = "left",
                    theme = "dark",

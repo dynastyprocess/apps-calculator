@@ -149,7 +149,10 @@ gen_df_values <- function(players_raw, picks_raw,
 
   df %>%
     filter(case_when(displaymode == 'Startup (Players Only)'~ pos!='PICK',
-                     displaymode == 'Startup (Players & Picks)'~ (pos!='PICK'|grepl(year(Sys.Date()),player)))) %>%
+                     displaymode == 'Startup (Players & Picks)'~(
+                       (pos!='PICK' & draft_year != year(Sys.Date())) |
+                         grepl(year(Sys.Date()),player)
+                       ))) %>%
     arrange(desc(value)) %>%
     rowid_to_column(var='pick') %>%
     mutate(startup_round = (pick %/% l_s)+1,
@@ -162,14 +165,16 @@ gen_df_values <- function(players_raw, picks_raw,
 sever_joke <- function(){
 
   sever::sever(
-    shiny::tagList(
+    shiny::div(
+      id = "sever_screen",
       shiny::h1("Disconnected"),
       shiny::p(shiny::em(try(joker::randomjoke()))),
       shiny::tags$button(
         "Reload",
         style = "color:#000;background-color:#fff;",
         class = "button button-raised",
-        onClick = "Shiny.shinyapp.reconnect();"
+        onClick = "Shiny.shinyapp.reconnect();" # for future allowReconnect ish things?
+        # onClick = "location.reload()"
       )
     ),
     bg_color = "#000"

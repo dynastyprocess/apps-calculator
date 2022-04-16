@@ -1,10 +1,10 @@
-options(shiny.reactlog = TRUE)
 players_raw <- read_parquet('data/player_raw.parquet')
 picks_raw <- read_parquet('data/picks_raw.parquet')
 
 ui <- ui_mainpage(
   f7TabLayout(
     use_sever(),
+    use_glouton(),
     shinyjs::useShinyjs(),
     meta() %>%
       meta_social(
@@ -18,97 +18,101 @@ ui <- ui_mainpage(
         twitter_site = "@DynastyProcess"
       ),
     includeCSS("www/dp.css"),
-    # addcss_transparentDT(),
     navbar = ui_header(),
     panels = ui_sidebar(),
     appbar = NULL,
     f7Tabs(
       # Main tabs ----
       id = 'tabs',
-      f7Tab( # input tab ----
-             tabName = "Inputs",
-             icon = f7Icon('wand_stars'),
-             active = TRUE,
-             # h1("Main Inputs", style = "text-align:center"),
-             uiOutput('team_inputs'),
-             br(),
-             dpcalc_inputs(),
-             ui_spacer()
+      f7Tab(
+        tabName = "Inputs",
+        icon = f7Icon('wand_stars'),
+        active = TRUE,
+        uiOutput('team_inputs'),
+        br(),
+        dpcalc_inputs(),
+        ui_spacer()
       ),
-      f7Tab( # analysis tab ----
-             tabName = "Analysis",
-             icon = f7Icon('graph_circle_fill'),
-             h1("Trade Analysis", style = 'text-align:center;'),
-             div(
-               id = "analysis_placeholder",
-               f7Card("Press Calculate to load the analysis!")
-             ),
-             shinyjs::hidden(
-               div(
-                 style = "text-align:center;",
-                 id = "gauge_div",
-                 f7Card(
-                   inset = TRUE,
-                   f7Gauge(id = 'score',
-                           type = 'semicircle',
-                           value = 50,
-                           borderBgColor = '#1b7837',
-                           borderColor = '#762a83',
-                           labelFontSize = '18'
-                   )
-                 )
-               )
-             ),
-             uiOutput('results_tab'),
-             ui_spacer()
-      ),
-      f7Tab(tabName = "Values", # values tab ----
-            icon = f7Icon('square_favorites_fill'),
-            h1('Values - Quick Reference', style = 'text-align:center;'),
+      f7Tab(
+        tabName = "Analysis",
+        icon = f7Icon('graph_circle_fill'),
+        h1("Trade Analysis", style = 'text-align:center;'),
+        div(
+          id = "analysis_placeholder",
+          f7Card("Press Calculate to load the analysis!")
+        ),
+        shinyjs::hidden(
+          div(
+            style = "text-align:center;",
+            id = "gauge_div",
             f7Card(
-              f7Text("value_search",label = NULL,placeholder = "Search:"),
-              inset = TRUE),
-            uiOutput('values'),
-            ui_spacer()
-      ),
-      f7Tab(tabName = "About", # about tab ----
-            icon = f7Icon('info_circle_fill'),
-            br(),
-            div(img(src = 'https://github.com/dynastyprocess/graphics/raw/main/.dynastyprocess/dp_hex.svg',style = 'max-width: 128px'), style = 'text-align:center;'),
-            br(),
-            f7Card(title = "About",
-                   includeMarkdown('www/about.md')),
-            br(),
-            dp_donations(),
-            br(),
-            f7Card(glue(
-              "ECR last updated: {players_raw$scrape_date[[1]]}"
-            )),
-            br(),
-            f7Card(
-              title = "More by DynastyProcess:",
-              f7List(
-                inset = TRUE,
-                f7ListItem(
-                  title = "Twitter",
-                  media = f7Icon('logo_twitter'),
-                  url = "https://www.twitter.com/dynastyprocess"
-                ),
-                f7ListItem(
-                  title = "Data Repository",
-                  media = f7Icon('archivebox_fill'),
-                  url = "https://www.github.com/dynastyprocess/data"
-                ),
-                f7ListItem(
-                  title = "Main Site",
-                  media = f7Icon('waveform_circle_fill'),
-                  url =
-                    "https://dynastyprocess.com"
-                )
+              inset = TRUE,
+              f7Gauge(id = 'score',
+                      type = 'semicircle',
+                      value = 50,
+                      borderBgColor = '#1b7837',
+                      borderColor = '#762a83',
+                      labelFontSize = '18'
               )
+            )
+          )
+        ),
+        uiOutput('results_tab'),
+        ui_spacer()
+      ),
+      f7Tab(
+        tabName = "Values",
+        icon = f7Icon('square_favorites_fill'),
+        h1('Values - Quick Reference', style = 'text-align:center;'),
+        f7Card(
+          f7Text("value_search",label = NULL,placeholder = "Search:"),
+          inset = TRUE),
+        uiOutput('values'),
+        ui_spacer()
+      ),
+      f7Tab(
+        tabName = "About",
+        icon = f7Icon('info_circle_fill'),
+        br(),
+        div(
+          img(src = 'https://github.com/dynastyprocess/graphics/raw/main/.dynastyprocess/dp_hex.svg',
+              style = 'max-width: 128px'),
+          style = 'text-align:center;'),
+        br(),
+        f7Card(
+          title = "About",
+          includeMarkdown('www/about.md')),
+        br(),
+        dp_donations(),
+        br(),
+        f7Card(glue(
+          "ECR last updated: {players_raw$scrape_date[[1]]}"
+        )),
+        br(),
+        f7Card(
+          title = "More by DynastyProcess:",
+          f7List(
+            inset = TRUE,
+            f7ListItem(
+              title = "Twitter",
+              media = f7Icon('logo_twitter'),
+              url = "https://www.twitter.com/dynastyprocess"
             ),
-            ui_spacer()
-            # f7Card(title = "Popular Players")
+            f7ListItem(
+              title = "Data Repository",
+              media = f7Icon('archivebox_fill'),
+              url = "https://www.github.com/dynastyprocess/data"
+            ),
+            f7ListItem(
+              title = "Main Site",
+              media = f7Icon('waveform_circle_fill'),
+              url =
+                "https://dynastyprocess.com"
+            )
+          )
+        ),
+        ui_spacer()
+        # f7Card(title = "Popular Players")
       )
     )
   )
@@ -122,7 +126,6 @@ server <- function(input, output, session) {
   observeEvent(input$teams,{
     if(parse_number(input$teams) >= 20 & input$qb_type != "2QB/SF"){
       updateF7SmartSelect(inputId = "qb_type", selected = "2QB/SF")
-
       f7Toast(
         text = "Whoa, big league! Switching QB type to SF.",
         position = "bottom",
@@ -140,6 +143,8 @@ server <- function(input, output, session) {
                   c('Player','Age','Value'))
   })
 
+  # values <- debounce(values, 1000)
+
   # Render input fields ----
 
   output$teamAinput <- renderUI({
@@ -149,8 +154,8 @@ server <- function(input, output, session) {
                    expandInput = TRUE,
                    typeahead = FALSE,
                    choices = values()$Player,
-                   # value = character()
-                   value = values()$Player[sample(1:32,1)]
+                   value = character()
+                   # value = values()$Player[sample(1:32,1)]
     )})
 
   output$teamBinput <- renderUI({
@@ -160,46 +165,38 @@ server <- function(input, output, session) {
                    expandInput = TRUE,
                    typeahead = FALSE,
                    choices = values()$Player,
-                   # value = character()
-                   value = values()$Player[sample(1:32,1)]
+                   value = character()
+                   # value = values()$Player[sample(1:32,1)]
     )})
 
   output$teamA_list <- renderUI({
-
     req(input$players_teamA)
-
-    map(input$players_teamA, f7ListItem) %>%
-      f7List(inset = TRUE)
+    map(input$players_teamA, f7ListItem) %>% f7List(inset = TRUE)
   })
 
   output$teamB_list <- renderUI({
-
     req(input$players_teamB)
-
-    map(input$players_teamB, f7ListItem) %>%
-      f7List(inset = TRUE)
+    map(input$players_teamB, f7ListItem) %>% f7List(inset = TRUE)
   })
 
   output$team_inputs <- renderUI({
-
     div(
       uiOutput('teamAinput'),
       uiOutput('teamA_list'),
       uiOutput('teamBinput'),
       uiOutput('teamB_list'),
-      f7Button('calculate',"Calculate!",
-               shadow = TRUE)
+      f7Button('calculate', "Calculate!", shadow = TRUE)
     )
   })
 
   observeEvent(input$toggle_inputhelp, {
-    updateF7Panel(inputId = "panel_left", session = session)
+    updateF7Panel(id = "panel_left", session = session)
   })
 
   observeEvent(values(),{
 
-    holdA <- input$players_teamA
-    holdB <- input$players_teamB
+    holdA <- input$players_teamA %||% character()
+    holdB <- input$players_teamB %||% character()
 
     updateF7AutoComplete('players_teamA', value = holdA)
     updateF7AutoComplete('players_teamB', value = holdB)
@@ -243,6 +240,16 @@ server <- function(input, output, session) {
     shinyjs::hide(id = "analysis_placeholder")
     shinyjs::show(id = "gauge_div")
 
+    list(
+      qb_type = input$qb_type,
+      teams = input$teams,
+      value_factor = input$value_factor,
+      rookie_optimism = input$rookie_optimism,
+      draft_type = input$draft_type,
+      future_factor = input$future_factor
+    ) %>%
+      imap(~glouton::add_cookie(.y,.x,options = cookie_options(expires = 30)))
+
     gauge_value <- if(teamA_total() > teamB_total()){50+percent_diff()/2} else {50-percent_diff()/2}
 
     updateF7Gauge(
@@ -259,6 +266,7 @@ server <- function(input, output, session) {
                             teamA_total() < teamB_total() ~ 'in favour of Team B'),
     )
 
+    updateF7Tabs(session, id = 'tabs', selected = 'Analysis')
   })
 
   output$teamA_total <- renderText({ paste("Team A total:",format(teamA_total(),big.mark = ',')) })
@@ -273,25 +281,6 @@ server <- function(input, output, session) {
       mobile_bar() %>%
       mobile_legend(position = 'bottom')
 
-  })
-
-  output$tradewizard_table <- renderDT({
-
-    trade_diff <- abs(teamA_total()-teamB_total())
-
-    tradebalancer_table <- values() %>%
-      filter(Value<=(trade_diff*1.05),Value>=(trade_diff*0.95)) %>%
-      datatable(class = "valuetable compact row-border",
-                container = value_container,
-                selection = 'none',
-                options = list(searching = FALSE,
-                               scrollX = TRUE,
-                               columnDefs = list(list(className = 'dt-left', targets = 0),
-                                                 list(className = 'dt-right', targets = -1)),
-                               ordering = FALSE,
-                               paging = FALSE,
-                               info = FALSE),
-                rownames = FALSE)
   })
 
   output$tradewizard <- renderUI({
@@ -310,59 +299,57 @@ server <- function(input, output, session) {
     )
   })
 
-output$results_tab <- renderUI({
+  output$results_tab <- renderUI({
 
-  req(input$calculate)
+    req(input$calculate)
 
-  div(
-    f7Card(div(textOutput('teamA_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
-    f7Table(teamA_values(),card = TRUE),
-    f7Card(div(textOutput('teamB_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
-    f7Table(teamB_values(),card = TRUE),
-    dp_donations(),
-    f7Card(title = "Trade Plot", inset = TRUE, mobileOutput('trade_plot')),
-    uiOutput('tradewizard'),
-    ui_spacer()
-  )
-})
+    div(
+      f7Card(div(textOutput('teamA_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
+      f7Table(teamA_values(),card = TRUE),
+      f7Card(div(textOutput('teamB_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
+      f7Table(teamB_values(),card = TRUE),
+      dp_donations(),
+      f7Card(title = "Trade Plot", inset = TRUE, mobileOutput('trade_plot')),
+      uiOutput('tradewizard'),
+      ui_spacer()
+    )
+  })
 
-observeEvent(input$calculate,{
-  updateF7Tabs(session, id = 'tabs', selected = 'Analysis')
-})
+  # values tab ----
 
-# values tab ----
+  value_display <- reactive({
+    if(!isTruthy(input$value_search)) return(values())
+    values() %>%
+      dplyr::filter(str_detect(tolower(Player),fixed(tolower(input$value_search))))
+  })
 
-value_display <- reactive({
-  if(is.null(input$value_search)) return(values())
-  values() %>%
-    dplyr::filter(str_detect(tolower(Player),tolower(input$value_search)))
-})
+  output$values <- renderUI({
+    div(
+      f7Table(value_display(),card = TRUE),
+      ui_spacer()
+    )
+  })
 
-output$values <- renderUI({
-  div(
-    f7Table(value_display(),card = TRUE),
-    ui_spacer()
-  )
-})
+  # show last updated ----
 
-# show last updated ----
+  f7Toast(
+    session = session,
+    text = glue("ECR last updated {players_raw$scrape_date[[1]]}"),
+    position = "center",
+    closeTimeout = 1000)
 
-f7Toast(
-  session = session,
-  text = glue("ECR last updated {players_raw$scrape_date[[1]]}"),
-  position = "center",
-  closeTimeout = 1000)
+  # Save data to a sqlite file on server ----
 
-# Save data to a sqlite file on server ----
-
-  sessionID <- UUIDgenerate(1)
+  sessionID <- UUIDgenerate(1,use.time = TRUE)
 
   observeEvent(input$calculate, {
 
     req(teamA_values(),teamB_values())
 
+    tradeID <- UUIDgenerate(1,use.time = TRUE)
+
     saved_data <- tibble(
-      trade_id = UUIDgenerate(1),
+      trade_id = tradeID,
       session_id = sessionID,
       timestamp = Sys.time(),
       input_calctype = input$calc_type,
@@ -378,20 +365,25 @@ f7Toast(
       teamB_players = paste(input$players_teamB, sep = "", collapse = " | "),
       teamB_values = paste0(teamB_values()$Value, sep = "", collapse = " | "),
       teamB_total = teamB_total()
-    ) %>%
-      mutate(
-        year_month = format(timestamp,format = "%Y_%m")
-      )
+    )
 
-    try({
-      arrow::write_dataset(
-        dataset = saved_data,
-        path = "storage",
-        format = "parquet",
-        partitioning = c("year_month","session_id")
-      )
-    })
+    fp <- fs::dir_create(file.path("storage",format(Sys.time(),format = "%Y_%m")))
+    arrow::write_parquet(saved_data,file.path(fp,paste0(tradeID,".parquet")))
   })
+
+  observeEvent(
+    eventExpr = TRUE,{
+
+      all_cookies <- fetch_cookies()
+
+      if(!is.null(all_cookies[["qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["qb_type"]])
+      if(!is.null(all_cookies[["teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["teams"]])
+      if(!is.null(all_cookies[["draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["draft_type"]])
+      if(!is.null(all_cookies[["value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["value_factor"]]))
+      if(!is.null(all_cookies[["rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["rookie_optimism"]]))
+      if(!is.null(all_cookies[["future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["future_factor"]]))
+
+    },ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
 
 } # end of server segment ----
 

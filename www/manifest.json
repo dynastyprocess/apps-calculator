@@ -3,7 +3,7 @@
   "short_name": "DP Calc",
   "description": "The DynastyProcess Trade Calculator helps you analyze trades with unparalleled control and customization",
   "lang": "en-US",
-  "start_url": "https://apps.dynastyprocess.com/calc/",
+  "start_url": "https://apps.dynastyprocess.com/calculator/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",

@@ -15,8 +15,8 @@ RoxygenNote: 7.1.1
 Imports: 
     arrow,
     dplyr (> 1.0.0),
-    DT,
     glue,
+    gluoton
     joker,
     lubridate,
     magrittr,
@@ -30,6 +30,7 @@ Imports:
     uuid
 Remotes: 
     tanho63/joker,
-    RinteRface/shinyMobile
+    RinteRface/shinyMobile,
+    colinfay/glouton
 URL: https://github.com/dynastyprocess/DynastyProcess_TradeCalculator
 BugReports: https://github.com/dynastyprocess/DynastyProcess_TradeCalculator/issues
