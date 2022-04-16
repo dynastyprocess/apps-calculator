@@ -1,0 +1,30 @@
+{
+  "name": "DynastyProcess Calculator",
+  "short_name": "My App",
+  "description": "The DynastyProcess Trade Calculator helps you analyze trades with unparalleled control and customization",
+  "lang": "en-US",
+  "start_url": "https://apps.dynastyprocess.com/calculator",
+  "display": "standalone",
+  "background_color": "#222222",
+  "theme_color": "#d7283c",
+  "icons": [
+    {
+      "src": "icons/icon-144.png",
+      "sizes": "144x144"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Shortcut",
+      "short_name": "Shortcut",
+      "description": "Do something",
+      "url": "/?foo=1",
+      "icons": [
+        {
+          "src": "icons/shortcut.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
