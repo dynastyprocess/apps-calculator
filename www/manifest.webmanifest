@@ -1,7 +1,7 @@
 {
   "name": "DynastyProcess Calculator",
-  "short_name": "My App",
-  "description": "The DynastyProcess Trade Calculator helps you analyze trades with unparalleled control and customization",
+  "short_name": "DP Calc",
+  "description": "The DynastyProcess Trade Calculator helps you analyze trades with unparalleled control and customization!",
   "lang": "en-US",
   "start_url": "https://apps.dynastyprocess.com/calculator",
   "display": "standalone",
