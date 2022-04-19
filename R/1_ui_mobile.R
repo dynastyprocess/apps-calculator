@@ -152,9 +152,9 @@ dpcalc_inputs <- function(){
          f7Slider(
            'future_factor',
            'Future Pick Value',
-           min = 65,
-           max = 95,
-           value = 80,
+           min = 50,
+           max = 100,
+           value = 90,
            step = 5,
            labels = tagList(
              f7Icon("play_fill"),

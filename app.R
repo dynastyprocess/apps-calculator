@@ -6,6 +6,9 @@ ui <- ui_mainpage(
     use_sever(),
     use_glouton(),
     shinyjs::useShinyjs(),
+    tags$script("$(document).on('shiny:connected', (e) => {
+    reconnectToast.close();
+  });"),
     meta() %>%
       meta_social(
         title = "Trade Calculator - DynastyProcess.com",
@@ -28,7 +31,11 @@ ui <- ui_mainpage(
         tabName = "Inputs",
         icon = f7Icon('wand_stars'),
         active = TRUE,
-        uiOutput('team_inputs'),
+        uiOutput('teamAinput'),
+        uiOutput('teamA_list'),
+        uiOutput('teamBinput'),
+        uiOutput('teamB_list'),
+        f7Button('calculate', "Calculate!", shadow = TRUE),
         br(),
         dpcalc_inputs(),
         ui_spacer()
@@ -143,9 +150,15 @@ server <- function(input, output, session) {
                   c('Player','Age','Value'))
   })
 
-  values <- debounce(values, 500)
+  # values <- debounce(values, 500)
 
-  # Render input fields ----
+  # Update input fields ----
+
+  # observeEvent(values(),{
+  #   updateF7AutoComplete("players_teamA")
+  #   updateF7AutoComplete("players_teamA")
+  #
+  # })
 
   output$teamAinput <- renderUI({
     f7AutoComplete('players_teamA',
@@ -177,16 +190,6 @@ server <- function(input, output, session) {
   output$teamB_list <- renderUI({
     req(input$players_teamB)
     map(input$players_teamB, f7ListItem) %>% f7List(inset = TRUE)
-  })
-
-  output$team_inputs <- renderUI({
-    div(
-      uiOutput('teamAinput'),
-      uiOutput('teamA_list'),
-      uiOutput('teamBinput'),
-      uiOutput('teamB_list'),
-      f7Button('calculate', "Calculate!", shadow = TRUE)
-    )
   })
 
   observeEvent(input$toggle_inputhelp, {
@@ -370,6 +373,8 @@ server <- function(input, output, session) {
     arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet")))
   })
 
+  session$allowReconnect(TRUE)
+
   observeEvent(
     eventExpr = TRUE,{
 
@@ -382,7 +387,7 @@ server <- function(input, output, session) {
       if(!is.null(all_cookies[["rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["rookie_optimism"]]))
       if(!is.null(all_cookies[["future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["future_factor"]]))
 
-    },ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
+    }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
 
 } # end of server segment ----
 

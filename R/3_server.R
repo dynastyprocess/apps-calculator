@@ -174,8 +174,8 @@ sever_joke <- function(){
         "Reload",
         style = "color:#000;background-color:#fff;",
         class = "button button-raised",
-        # onClick = "Shiny.shinyapp.reconnect();" # for future allowReconnect ish things?
-        onClick = "location.reload()"
+        onClick = "Shiny.shinyapp.reconnect();" # for future allowReconnect ish things?
+        # onClick = "location.reload()"
       )
     ),
     bg_color = "#000"
