@@ -4,6 +4,7 @@ suppressPackageStartupMessages({
   library(fs)
   library(httr)
   library(glue)
+  library(ffscrapr)
   setwd(here::here())
 })
 
@@ -15,7 +16,9 @@ update_local_values <- function(){
   })
 
   read.csv("https://raw.githubusercontent.com/dynastyprocess/data/master/files/values-players.csv") %>%
-    mutate(player = paste0(player,", ",pos," ",team)) %>%
+    mutate(
+      player = dp_clean_names(player),
+      player = paste0(player,", ",pos," ",team)) %>%
     write_parquet('data/player_raw.parquet')
 
   read.csv("https://raw.githubusercontent.com/dynastyprocess/data/master/files/values-picks.csv") %>%

@@ -3,7 +3,7 @@ picks_raw <- read_parquet('data/picks_raw.parquet')
 
 ui <- ui_mainpage(
   f7TabLayout(
-    useSever(),
+    use_sever(),
     use_glouton(),
     shinyjs::useShinyjs(),
     tags$script("$(document).on('shiny:connected', function(e) {
