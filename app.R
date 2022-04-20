@@ -3,12 +3,12 @@ picks_raw <- read_parquet('data/picks_raw.parquet')
 
 ui <- ui_mainpage(
   f7TabLayout(
-    use_sever(),
+    useSever(),
     use_glouton(),
     shinyjs::useShinyjs(),
-    tags$script("$(document).on('shiny:connected', (e) => {
-    reconnectToast.close();
-  });"),
+    tags$script("$(document).on('shiny:connected', function(e) {
+                $('#sever_screen').remove();
+                });"),
     meta() %>%
       meta_social(
         title = "Trade Calculator - DynastyProcess.com",
@@ -31,9 +31,23 @@ ui <- ui_mainpage(
         tabName = "Inputs",
         icon = f7Icon('wand_stars'),
         active = TRUE,
-        uiOutput('teamAinput'),
+        f7SmartSelect(inputId = "players_teamA",
+                      label = "Add Players to Team A",
+                      multiple = TRUE,
+                      choices = NULL,
+                      openIn = "popup",
+                      searchbar = TRUE,
+                      virtualList = TRUE
+                      ),
         uiOutput('teamA_list'),
-        uiOutput('teamBinput'),
+        f7SmartSelect(inputId = "players_teamB",
+                      label = "Add Players to Team B",
+                      multiple = TRUE,
+                      openIn = "popup",
+                      choices = NULL,
+                      searchbar = TRUE,
+                      virtualList = TRUE
+                      ),
         uiOutput('teamB_list'),
         f7Button('calculate', "Calculate!", shadow = TRUE),
         br(),
@@ -150,37 +164,13 @@ server <- function(input, output, session) {
                   c('Player','Age','Value'))
   })
 
-  # values <- debounce(values, 500)
 
   # Update input fields ----
 
-  # observeEvent(values(),{
-  #   updateF7AutoComplete("players_teamA")
-  #   updateF7AutoComplete("players_teamA")
-  #
-  # })
-
-  output$teamAinput <- renderUI({
-    f7AutoComplete('players_teamA',
-                   label = "Add Players to Team A",
-                   multiple = TRUE,
-                   expandInput = TRUE,
-                   typeahead = FALSE,
-                   choices = values()$Player,
-                   value = character()
-                   # value = values()$Player[sample(1:32,1)]
-    )})
-
-  output$teamBinput <- renderUI({
-    f7AutoComplete('players_teamB',
-                   label = "Add Players to Team B",
-                   multiple = TRUE,
-                   expandInput = TRUE,
-                   typeahead = FALSE,
-                   choices = values()$Player,
-                   value = character()
-                   # value = values()$Player[sample(1:32,1)]
-    )})
+  observeEvent(values(),{
+    updateF7SmartSelect("players_teamA", choices = values()$Player,)
+    updateF7SmartSelect("players_teamB", choices = values()$Player)
+  })
 
   output$teamA_list <- renderUI({
     req(input$players_teamA)
@@ -195,16 +185,6 @@ server <- function(input, output, session) {
   observeEvent(input$toggle_inputhelp, {
     updateF7Panel(id = "panel_left", session = session)
   })
-
-  observeEvent(values(),{
-
-    holdA <- input$players_teamA %||% character()
-    holdB <- input$players_teamB %||% character()
-
-    updateF7AutoComplete('players_teamA', value = holdA)
-    updateF7AutoComplete('players_teamB', value = holdB)
-  },
-  ignoreInit = TRUE)
 
   # Results tab ----
 
@@ -373,7 +353,7 @@ server <- function(input, output, session) {
     arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet")))
   })
 
-  session$allowReconnect(TRUE)
+  session$allowReconnect("force")
 
   observeEvent(
     eventExpr = TRUE,{
