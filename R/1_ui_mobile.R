@@ -113,7 +113,7 @@ dpcalc_inputs <- function(){
              'teams',
              label = 'Teams',
              openIn = "sheet",
-             choices = glue("{seq(6,24,2)} teams"),
+             choices = glue("{seq(6,32,2)} teams"),
              selected = "12 teams"
            ),
            f7SmartSelect(

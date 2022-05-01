@@ -6,9 +6,9 @@ ui <- ui_mainpage(
     use_sever(),
     use_glouton(),
     shinyjs::useShinyjs(),
-    tags$script("$(document).on('shiny:connected', function(e) {
+    tags$script(HTML("$(document).on('shiny:connected', (e)=> {
                 $('#sever_screen').remove();
-                });"),
+                });")),
     meta() %>%
       meta_social(
         title = "Trade Calculator - DynastyProcess.com",
@@ -141,7 +141,7 @@ ui <- ui_mainpage(
 server <- function(input, output, session) {
 
   sever_joke() # cleans up disconnect screen
-
+  session$allowReconnect(TRUE)
   # Input Updates ----
 
   observeEvent(input$teams,{
@@ -164,13 +164,17 @@ server <- function(input, output, session) {
                   c('Player','Age','Value'))
   })
 
+  values <- debounce(values,500)
 
   # Update input fields ----
 
   observeEvent(values(),{
-    updateF7SmartSelect("players_teamA", choices = values()$Player,)
+    shinyMobile::showF7Preloader()
+    updateF7SmartSelect("players_teamA", choices = values()$Player)
     updateF7SmartSelect("players_teamB", choices = values()$Player)
-  })
+    Sys.sleep(0.5)
+    shinyMobile::hideF7Preloader()
+  },ignoreInit = FALSE)
 
   output$teamA_list <- renderUI({
     req(input$players_teamA)
@@ -352,8 +356,6 @@ server <- function(input, output, session) {
 
     arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet")))
   })
-
-  session$allowReconnect("force")
 
   observeEvent(
     eventExpr = TRUE,{

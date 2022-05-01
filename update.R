@@ -17,7 +17,7 @@ update_local_values <- function(){
 
   read.csv("https://raw.githubusercontent.com/dynastyprocess/data/master/files/values-players.csv") %>%
     mutate(
-      player = dp_clean_names(player),
+      player = dp_clean_names(as.character(player)),
       player = paste0(player,", ",pos," ",team)) %>%
     write_parquet('data/player_raw.parquet')
 
