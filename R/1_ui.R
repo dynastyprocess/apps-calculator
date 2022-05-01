@@ -1,15 +1,3 @@
-
-addcss_transparentDT <- function(){
-  tags$head(tags$style(
-    HTML(
-      "
-      table td, table tr, table th{background: transparent !important;}
-      .valuetable {color: #ffffff}
-      "
-    )
-  ))
-}
-
 ui_mainpage <- function(...){
   f7Page( # f7Page setup and Init Options ----
           title = "DynastyProcess Trade Calculator",
