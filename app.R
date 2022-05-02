@@ -299,12 +299,12 @@ server <- function(input, output, session) {
 
     req(percent_diff() > 5 | is.infinite(percent_diff()))
 
-    v <- rv$values
+    v <- copy(rv$values)
     setDT(v)
 
     trade_diff <- abs(teamA_total() - teamB_total())
 
-    tradebalancer_table <- v[Value<=(trade_diff*1.05),Value>=(trade_diff*0.95),]
+    tradebalancer_table <- v[Value<=(trade_diff*1.05) & Value>=(trade_diff*0.95),]
 
     tagList(
       f7Card(title = "Trade Wizard", inset = TRUE,
@@ -380,12 +380,12 @@ server <- function(input, output, session) {
 
       all_cookies <- fetch_cookies()
 
-      if(!is.null(all_cookies[["qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["qb_type"]])
-      if(!is.null(all_cookies[["teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["teams"]])
-      if(!is.null(all_cookies[["draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["draft_type"]])
-      if(!is.null(all_cookies[["value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["value_factor"]]))
-      if(!is.null(all_cookies[["rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["rookie_optimism"]]))
-      if(!is.null(all_cookies[["future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["future_factor"]]))
+      if(!is.null(all_cookies[["dp_qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["dp_qb_type"]])
+      if(!is.null(all_cookies[["dp_teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["dp_teams"]])
+      if(!is.null(all_cookies[["dp_draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["dp_draft_type"]])
+      if(!is.null(all_cookies[["dp_value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["dp_value_factor"]]))
+      if(!is.null(all_cookies[["dp_rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["dp_rookie_optimism"]]))
+      if(!is.null(all_cookies[["dp_future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["dp_future_factor"]]))
 
     }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
 
