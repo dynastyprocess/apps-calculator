@@ -173,11 +173,11 @@ server <- function(input, output, session) {
 
   observeEvent({
     paste(input$qb_type,
-      input$teams,
-      input$value_factor,
-      input$rookie_optimism,
-      input$draft_type,
-      input$future_factor)
+          input$teams,
+          input$value_factor,
+          input$rookie_optimism,
+          input$draft_type,
+          input$future_factor)
   },{
     shinyMobile::showF7Preloader()
     rv$values <- values_generate(players_raw = players_raw,
@@ -247,7 +247,7 @@ server <- function(input, output, session) {
 
   observeEvent(input$calculate,{
     shinyjs::hide(id = "analysis_placeholder")
-    shinyjs::show(id = "gauge_div")
+    shinyjs::show(id = "result_div")
 
     glouton::add_cookie("dp_qb_type", input$qb_type,options = cookie_options(expire = 1))
     glouton::add_cookie("dp_teams", input$teams,options = cookie_options(expire = 1))
@@ -280,11 +280,11 @@ server <- function(input, output, session) {
 
   output$trade_plot <- render_mobile({
 
-    vA <- teamA_values()
+    vA <- copy(teamA_values())
     setDT(vA)
     vA[,Team := "Team A"]
 
-    vB <- teamB_values()
+    vB <- copy(teamB_values())
     setDT(vB)
     vB[,Team := "Team B"]
 
@@ -347,29 +347,32 @@ server <- function(input, output, session) {
 
     req(teamA_values(),teamB_values())
 
-    tradeID <- UUIDgenerate(1,use.time = TRUE)
+    try({
 
-    saved_data <- data.frame(
-      trade_id = tradeID,
-      session_id = sessionID,
-      timestamp = Sys.time(),
-      input_calctype = input$calc_type,
-      input_drafttype = input$draft_type,
-      input_qb = input$qb_type,
-      input_teams = input$teams,
-      input_valuefactor = input$value_factor,
-      input_rookieoptimism = input$rookie_optimism,
-      input_futurefactor = input$future_factor,
-      teamA_players = paste(input$players_teamA, sep = "", collapse = " | "),
-      teamA_values = paste0(teamA_values()$Value, sep = "", collapse = " | "),
-      teamA_total = teamA_total(),
-      teamB_players = paste(input$players_teamB, sep = "", collapse = " | "),
-      teamB_values = paste0(teamB_values()$Value, sep = "", collapse = " | "),
-      teamB_total = teamB_total(),
-      stringsAsFactors = FALSE
-    )
+      tradeID <- UUIDgenerate(1,use.time = TRUE)
 
-    try(arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet"))))
+      saved_data <- tibble::tibble(
+        trade_id = tradeID,
+        session_id = sessionID,
+        timestamp = Sys.time(),
+        input_calctype = input$calc_type,
+        input_drafttype = input$draft_type,
+        input_qb = input$qb_type,
+        input_teams = input$teams,
+        input_valuefactor = input$value_factor,
+        input_rookieoptimism = input$rookie_optimism,
+        input_futurefactor = input$future_factor,
+        teamA_players = paste(input$players_teamA, sep = "", collapse = " | "),
+        teamA_values = paste0(teamA_values()$Value, sep = "", collapse = " | "),
+        teamA_total = teamA_total(),
+        teamB_players = paste(input$players_teamB, sep = "", collapse = " | "),
+        teamB_values = paste0(teamB_values()$Value, sep = "", collapse = " | "),
+        teamB_total = teamB_total(),
+        stringsAsFactors = FALSE
+      )
+
+      arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet")))
+    })
   })
 
   observeEvent(
