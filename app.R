@@ -1,14 +1,12 @@
-players_raw <- read_parquet('data/player_raw.parquet')
-picks_raw <- read_parquet('data/picks_raw.parquet')
+players_raw <- as.data.table(read_parquet('data/player_raw.parquet'))
+picks_raw <- as.data.table(read_parquet('data/picks_raw.parquet'))
 
 ui <- ui_mainpage(
   f7TabLayout(
     use_sever(),
     use_glouton(),
     shinyjs::useShinyjs(),
-    tags$script(HTML("$(document).on('shiny:connected', (e)=> {
-                $('#sever_screen').remove();
-                });")),
+    tags$head(tags$script(src = "dpcalc.js")),
     meta() %>%
       meta_social(
         title = "Trade Calculator - DynastyProcess.com",
@@ -25,33 +23,34 @@ ui <- ui_mainpage(
     panels = ui_sidebar(),
     appbar = NULL,
     f7Tabs(
-      # Main tabs ----
       id = 'tabs',
       f7Tab(
         tabName = "Inputs",
         icon = f7Icon('wand_stars'),
         active = TRUE,
-        f7SmartSelect(inputId = "players_teamA",
-                      label = "Add Players to Team A",
-                      multiple = TRUE,
-                      choices = NULL,
-                      openIn = "popup",
-                      searchbar = TRUE,
-                      virtualList = TRUE
-                      ),
+        f7SmartSelect(
+          inputId = "players_teamA",
+          label = "Add Players to Team A",
+          multiple = TRUE,
+          choices = NULL,
+          openIn = "popup",
+          searchbar = TRUE,
+          virtualList = TRUE
+        ),
         uiOutput('teamA_list'),
-        f7SmartSelect(inputId = "players_teamB",
-                      label = "Add Players to Team B",
-                      multiple = TRUE,
-                      openIn = "popup",
-                      choices = NULL,
-                      searchbar = TRUE,
-                      virtualList = TRUE
-                      ),
+        f7SmartSelect(
+          inputId = "players_teamB",
+          label = "Add Players to Team B",
+          multiple = TRUE,
+          openIn = "popup",
+          choices = NULL,
+          searchbar = TRUE,
+          virtualList = TRUE
+        ),
         uiOutput('teamB_list'),
         f7Button('calculate', "Calculate!", shadow = TRUE),
         br(),
-        dpcalc_inputs(),
+        dp_inputs(),
         ui_spacer()
       ),
       f7Tab(
@@ -64,18 +63,26 @@ ui <- ui_mainpage(
         ),
         shinyjs::hidden(
           div(
-            style = "text-align:center;",
-            id = "gauge_div",
-            f7Card(
-              inset = TRUE,
-              f7Gauge(id = 'score',
-                      type = 'semicircle',
-                      value = 50,
-                      borderBgColor = '#1b7837',
-                      borderColor = '#762a83',
-                      labelFontSize = '18'
-              )
-            )
+            id = "result_div",
+            div(
+              style = "text-align:center;",
+              f7Card(
+                inset = TRUE,
+                f7Gauge(id = 'score',
+                        type = 'semicircle',
+                        value = 50,
+                        borderBgColor = '#1b7837',
+                        borderColor = '#762a83',
+                        labelFontSize = '18')
+              )),
+            f7Card(div(textOutput('teamA_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
+            uiOutput('result_table_teamA'),
+            f7Card(div(textOutput('teamB_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
+            uiOutput('result_table_teamA'),
+            dp_donations(),
+            f7Card(title = "Trade Plot", inset = TRUE, mobileOutput('trade_plot')),
+            uiOutput('tradewizard'),
+            ui_spacer()
           )
         ),
         uiOutput('results_tab'),
@@ -97,7 +104,7 @@ ui <- ui_mainpage(
         br(),
         div(
           img(src = 'https://github.com/dynastyprocess/graphics/raw/main/.dynastyprocess/dp_hex.svg',
-              style = 'max-width: 128px'),
+              style = 'max-width: 128px;'),
           style = 'text-align:center;'),
         br(),
         f7Card(
@@ -106,9 +113,9 @@ ui <- ui_mainpage(
         br(),
         dp_donations(),
         br(),
-        f7Card(glue(
-          "ECR last updated: {players_raw$scrape_date[[1]]}"
-        )),
+        f7Card(
+          glue("ECR last updated: {players_raw$scrape_date[[1]]}")
+        ),
         br(),
         f7Card(
           title = "More by DynastyProcess:",
@@ -158,10 +165,11 @@ server <- function(input, output, session) {
   # Calculate Actual Values ----
 
   values <- reactive({
-    gen_df_values(players_raw,picks_raw,
-                  input$qb_type,input$teams,input$value_factor,
-                  input$rookie_optimism,input$draft_type,input$future_factor,
-                  c('Player','Age','Value'))
+    shinyMobile::showF7Preloader()
+    values_generate(players_raw,picks_raw,
+                    input$qb_type,input$teams,input$value_factor,
+                    input$rookie_optimism,input$draft_type,input$future_factor,
+                    c('Player','Age','Value'))
   })
 
   values <- debounce(values,500)
@@ -169,7 +177,6 @@ server <- function(input, output, session) {
   # Update input fields ----
 
   observeEvent(values(),{
-    shinyMobile::showF7Preloader()
     updateF7SmartSelect("players_teamA", choices = values()$Player)
     updateF7SmartSelect("players_teamB", choices = values()$Player)
     Sys.sleep(0.5)
@@ -215,27 +222,22 @@ server <- function(input, output, session) {
       pull(Total)
   })
 
-  percent_diff <- reactive({if (teamA_total() > teamB_total())
-  {round(100*((teamA_total() - teamB_total())/teamB_total()))}
-    else if (teamA_total() < teamB_total())
-    {round(100*((teamB_total() - teamA_total())/teamA_total()))}
-    else
-    {0}
+  percent_diff <- reactive({
+    if (teamA_total() > teamB_total()) {round(100*((teamA_total() - teamB_total())/teamB_total()))}
+    else if (teamA_total() < teamB_total()) {round(100*((teamB_total() - teamA_total())/teamA_total()))}
+    else {0}
   })
 
   observeEvent(input$calculate,{
     shinyjs::hide(id = "analysis_placeholder")
     shinyjs::show(id = "gauge_div")
 
-    list(
-      qb_type = input$qb_type,
-      teams = input$teams,
-      value_factor = input$value_factor,
-      rookie_optimism = input$rookie_optimism,
-      draft_type = input$draft_type,
-      future_factor = input$future_factor
-    ) %>%
-      imap(~glouton::add_cookie(.y,.x,options = cookie_options(expires = 30)))
+    glouton::add_cookie("dp_qb_type", input$qb_type,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_teams", input$teams,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_value_factor", input$value_factor,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_rookie_optimism", input$rookie_optimism,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_draft_type", input$draft_type,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_future_factor", input$future_factor,options = cookie_options(expire = 1))
 
     gauge_value <- if(teamA_total() > teamB_total()){50+percent_diff()/2} else {50-percent_diff()/2}
 
@@ -286,21 +288,8 @@ server <- function(input, output, session) {
     )
   })
 
-  output$results_tab <- renderUI({
-
-    req(input$calculate)
-
-    div(
-      f7Card(div(textOutput('teamA_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
-      f7Table(teamA_values(),card = TRUE),
-      f7Card(div(textOutput('teamB_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
-      f7Table(teamB_values(),card = TRUE),
-      dp_donations(),
-      f7Card(title = "Trade Plot", inset = TRUE, mobileOutput('trade_plot')),
-      uiOutput('tradewizard'),
-      ui_spacer()
-    )
-  })
+  output$result_table_teamA <- renderUI({req(input$calculate); f7Table(teamA_values(),card = TRUE)})
+  output$result_table_teamB <- renderUI({req(input$calculate); f7Table(teamB_values(),card = TRUE)})
 
   # values tab ----
 
@@ -354,22 +343,22 @@ server <- function(input, output, session) {
       teamB_total = teamB_total()
     )
 
-    arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet")))
+    try(arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet"))))
   })
 
-  observeEvent(
-    eventExpr = TRUE,{
-
-      all_cookies <- fetch_cookies()
-
-      if(!is.null(all_cookies[["qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["qb_type"]])
-      if(!is.null(all_cookies[["teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["teams"]])
-      if(!is.null(all_cookies[["draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["draft_type"]])
-      if(!is.null(all_cookies[["value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["value_factor"]]))
-      if(!is.null(all_cookies[["rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["rookie_optimism"]]))
-      if(!is.null(all_cookies[["future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["future_factor"]]))
-
-    }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
+  # observeEvent(
+  #   eventExpr = TRUE,{
+  #
+  #     all_cookies <- fetch_cookies()
+  #
+  #     if(!is.null(all_cookies[["qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["qb_type"]])
+  #     if(!is.null(all_cookies[["teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["teams"]])
+  #     if(!is.null(all_cookies[["draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["draft_type"]])
+  #     if(!is.null(all_cookies[["value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["value_factor"]]))
+  #     if(!is.null(all_cookies[["rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["rookie_optimism"]]))
+  #     if(!is.null(all_cookies[["future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["future_factor"]]))
+  #
+  #   }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
 
 } # end of server segment ----
 

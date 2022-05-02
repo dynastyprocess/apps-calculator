@@ -27,12 +27,12 @@ update_local_values <- function(){
 
   arrow::write_parquet(picks, 'data/picks_raw.parquet')
 
-  prefill <- gen_df_values(players_raw, picks_raw)
+  # prefill <- values_generate(players_raw, picks_raw)
 
-  arrow::write_parquet(prefill,"data/prefill.parquet")
+  # arrow::write_parquet(prefill,"data/prefill.parquet")
 
   on.exit(NULL)
-  arrow::POST("https://hc-ping.com/9345d7c2-eddc-4b99-b995-0717fc007e6a",
+  httr::POST("https://hc-ping.com/9345d7c2-eddc-4b99-b995-0717fc007e6a",
        body = glue::glue("Successfully updated calculator values at {Sys.time()}"))
 }
 

@@ -1,18 +1,21 @@
+#' @inheritParams f7Page
 ui_mainpage <- function(...){
-  f7Page( # f7Page setup and Init Options ----
-          title = "DynastyProcess Trade Calculator",
-          manifest = "manifest.json",
-          favicon = "favicon.ico",
-          icon = '128x128.png',
-          allowPWA = TRUE,
-          options = list(
-            dark = TRUE,
-            theme = 'md',
-            color = '#d7283c',#ed122b
-            tapHold = FALSE,
-            navbar = list()
-          ),
-          ...
+  f7Page(
+    title = "DynastyProcess Trade Calculator",
+    manifest = "manifest.json",
+    favicon = "favicon.ico",
+    icon = '128x128.png',
+    allowPWA = TRUE,
+    preloader = TRUE,
+    loading_duration = 3,
+    options = list(
+      dark = TRUE,
+      theme = 'md',
+      color = '#d7283c',#ed122b
+      tapHold = FALSE,
+      navbar = list()
+    ),
+    ...
   )
 }
 
@@ -88,7 +91,7 @@ ui_spacer <- function(){
   div(br(),br(),br(),br(),br())
 }
 
-dpcalc_inputs <- function(){
+dp_inputs <- function(){
   f7Card(title = 'Customize Value Settings',
          f7Row(
            f7SmartSelect(

@@ -3,11 +3,17 @@ suppressPackageStartupMessages({
   library(arrow)
 
   # Data manipulation
-  library(tidyverse)
+  library(purrr)
+  library(dplyr)
+  library(stringr)
+  library(sever)
+  library(shiny)
+  library(joker)
   library(lubridate)
   library(glue)
   library(magrittr)
   library(uuid)
+  library(data.table)
   # Shiny
   library(shiny)
   library(shinyMobile) # tanho63/shinymobile
