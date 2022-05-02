@@ -1,12 +1,7 @@
 #' Calculates Trade Values
+# pkgload::load_all()
+.datatable.aware <- TRUE
 
-qb_type = "1QB"
-league_size = "12 teams"
-value_factor = 235
-rookie_optimism = 75
-draft_type = "Normal"
-future_factor = 80
-.datatable.aware=TRUE
 values_generate <- function(players_raw,
                             picks_raw,
                             qb_type = "1QB",
@@ -26,22 +21,14 @@ values_generate <- function(players_raw,
     .add_futurepicks(future_factor, .league_size) |>
     .filter_rookiepicks()
 
-  # pick_values <- .calculate_value(pick_values, value_factor)
-  # pick_values <-
-  #   .label_currentpicks(parse_number(league_size)) %>%
-  #   .calculate_value(value_factor) %>%
-  #   .add_futurepicks(future_factor,parse_number(league_size)) %>%
-  #   .filter_rookiepicks() %>%
-  #   select(player = pick_label,value)
+  player_values <- players_raw |>
+    .select_qbtype(qb_type) |>
+    .calculate_value(value_factor)
 
-  players_raw %>%
-    .select_qbtype(qb_type) %>%
-    .calculate_value(value_factor) %>%
-    bind_rows(pick_values) %>%
-    .label_displaymode(draft_type,league_size) %>%
-    arrange(desc(value)) %>%
-    rename(Player = player,Age = age,Value = value) %>%
-    select(Player,Age,Value)
+  combined_values <- rbindlist(list(player_values,pick_values), fill = TRUE, use.names = TRUE) |>
+    .label_draft_type(draft_type, .league_size)
+
+  combined_values[order(-value),list(Player = player, Age = age, Value = value)]
 }
 
 ## Value Subfunctions ----
@@ -51,48 +38,47 @@ values_generate <- function(players_raw,
 
 .calc_currentpicks <- function(picks_raw, rookie_opt, qb_type){
 
-  cp <- picks_raw[
-    ,
-    c("high_factor","low_factor","high_model","low_model") :=
-      list(rookie_opt/100,
-           1- (rookie_opt / 100),
-           ifelse(qb_type == "1QB", ecr_high_1qb, ecr_high_2qb),
-           ifelse(qb_type == "1QB", ecr_low_1qb, ecr_low_2qb)
-    )
-  ][,ecr:= high_factor * high_model + low_factor*low_model]
+  high_model <-  if(qb_type == "1QB") picks_raw$ecr_high_1qb else picks_raw$ecr_high_2qb
+  low_model <- if(qb_type == "1QB") picks_raw$ecr_low_1qb else picks_raw$ecr_low_2qb
+  high_factor <-  rookie_opt/100
+  low_factor <-  1 - (rookie_opt/100)
+  ecr <- high_factor * high_model + low_factor*low_model
 
-  return(cp)
+  pick_values <- picks_raw[, ecr := ecr]
+
+  return(pick_values)
 }
 
-.label_currentpicks <- function(cp,leaguesize) {
-  l_s <- leaguesize + 0.001
+.label_currentpicks <- function(pick_values,leaguesize) {
+  .league_size <- leaguesize + 0.001
 
-  cp <- cp[
+  pick_values <- pick_values[
     ,`:=`(season = lubridate::year(lubridate::as_date(scrape_date)),
-          rookie_round = (pick %/% l_s) + 1,
-          round_pick = round(pick %% l_s,0),
-          pick_label = paste0(season," Pick ",as.character(rookie_round),".",str_pad(round_pick,2,'left',0))
-          )
+          rookie_round = (pick %/% .league_size) + 1,
+          round_pick = round(pick %% .league_size,0))
+  ][, pick_label := paste0(season," Pick ",as.character(rookie_round),".",str_pad(round_pick,2,'left',0))
   ]
-  return(cp)
+  return(pick_values)
 }
 
 .select_qbtype <- function(df,qb_type){
-  df_q <- df[,ecr := ifelse(qb_type == "1QB", ecr_1qb, ecr_2qb)]
+  v_ecr <- if(qb_type == "1QB") df$ecr_1qb else df$ecr_2qb
+
+  df_q <- df[,ecr := v_ecr]
   return(df_q)
 }
 
 .calculate_value <- function(df,value_factor){
   .value_factor <- value_factor / 10000
 
-  df_v <- df[,value := round(10500 * exp(.value_factor * ecr))]
+  df_v <- df[,value := round(10500 * exp(-.value_factor * ecr))]
   return(df_v)
 }
 
 
-.add_futurepicks <- function(pick_values, future_factor, league_size){
+.add_futurepicks <- function(pick_values, future_factor, .league_size){
   .future_factor <- future_factor / 100
-  .league_size <- .parse_number(league_size) + 0.001
+  .league_size <- .league_size + 0.001
 
   today_month <- lubridate::month(Sys.Date())
 
@@ -104,85 +90,100 @@ values_generate <- function(players_raw,
 
   n2_factor <- .future_factor
 
-  n1 <- df[
+  n1 <- copy(pick_values)
+
+  n1[
     ,`:=`(
       season = season + 1,
       rookie_round = data.table::fcase(rookie_round == 1, '1st',
                                        rookie_round == 2,  '2nd',
                                        rookie_round == 3,  '3rd',
                                        rookie_round >= 4,  paste0(rookie_round,'th')),
-      eml = data.table::fcase(round_pick <= l_s/3, 'Early',
-                              round_pick <= l_s*2/3, 'Mid',
+      eml = data.table::fcase(round_pick <= .league_size/3, 'Early',
+                              round_pick <= .league_size*2/3, 'Mid',
                               default =  'Late')
     )
   ]
 
-  n1_eml <- copy(n1)
 
-  n1_eml[
-    ,value = mean(value) * n1_factor
+  n1_eml <- n1[
+    ,.(value = mean(value) * n1_factor)
+    ,keyby = .(season, rookie_round, eml)
+  ][,pick_label := paste(season,eml,rookie_round)]
+
+  n1_summary <- n1[
+    ,list(value = mean(value) * n1_factor)
+    ,by = .(season, rookie_round)
+  ][,pick_label := paste(season,rookie_round)
   ]
 
-  n1_eml <- n1 %>%
-    group_by(season,rookie_round,eml) %>%
-    summarise(value = mean(value)*n1_factor) %>%
-    ungroup() %>%
-    mutate(pick_label = paste(season,eml,rookie_round))
+  n2_summary <- copy(n1_summary)
 
-  n1_summary <- n1 %>%
-    group_by(season,rookie_round) %>%
-    summarise(value = mean(value)*n1_factor) %>%
-    ungroup() %>%
-    mutate(pick_label = paste(season,rookie_round))
+  n2_summary[
+    ,':='(season = season + 1,
+          value = value * n2_factor)
+  ][, pick_label := paste(season, rookie_round)
+  ]
 
-  n2_summary <- n1_summary %>%
-    mutate(season = season + 1,
-           value = value*n2_factor,
-           pick_label = paste(season,rookie_round))
+  n3_summary <- copy(n2_summary)
 
-  n3_summary <- n2_summary %>%
-    mutate(season = season + 1,
-           value = value * n2_factor,
-           pick_label = paste(season, rookie_round))
+  n3_summary[
+    ,':='(season = season + 1,
+          value = value * n2_factor)
+  ][,pick_label := paste(season, rookie_round)]
 
-  df %>%
-    mutate(rookie_round = as.character(rookie_round)) %>%
-    bind_rows(n1_eml,n1_summary,n2_summary, n3_summary) %>%
-    mutate(position = "PICK",
-           value = round(value)) %>%
-    arrange(desc(value))
+  df_picks <- data.table::rbindlist(list(pick_values,n1_eml,n1_summary,n2_summary,n3_summary),
+                        fill = TRUE,
+                        use.names = TRUE)
+
+  df_picks[
+    ,`:=`(
+      player = pick_label,
+      position = "PICK",
+      value = round(value)
+    )
+  ][order(-value)]
 }
 
 .filter_rookiepicks <- function(df,today_date = Sys.Date()){
-  today_month <- month(today_date)
+  today_month <- lubridate::month(today_date)
 
-  today_year <- year(today_date) %>% as.character()
+  today_year <- lubridate::year(today_date)
 
   if(today_month > 8){
-    df <- df %>%
-      filter(str_detect(pick_label,today_year,negate = TRUE))
+    df <- df[season != today_year,]
   }
+
+  df[, list(player, position, value)]
 
   return(df)
 }
 
-.label_displaymode <- function(df,displaymode,leaguesize){
-  l_s <- parse_number(leaguesize) + 0.001
+.label_draft_type <- function(df,draft_type, .league_size){
+  .league_size <- .league_size + 0.001
 
-  if(displaymode=='Normal'){return(df)}
+  if(draft_type=='Normal') return(df)
 
-  df %>%
-    filter(case_when(displaymode == 'Startup (Players Only)'~ pos!='PICK',
-                     displaymode == 'Startup (Players & Picks)'~(
-                       (pos!='PICK' & draft_year != year(Sys.Date())) |
-                         grepl(year(Sys.Date()),player)
-                     ))) %>%
-    arrange(desc(value)) %>%
-    rowid_to_column(var='pick') %>%
-    mutate(startup_round = (pick %/% l_s)+1,
-           startup_pick = round(pick %% l_s,0),
-           player = paste0("Startup Pick ",startup_round,".",str_pad(startup_pick,2,'left',0)),
-           age = NA) %>%
-    bind_rows(df) %>%
-    arrange(desc(value),player)
+  startup_picks <- copy(df)
+
+  filter_vec <- data.table::fcase(
+    draft_type == 'Startup (Players Only)', startup_picks$pos != "PICK",
+    draft_type == "Startup (Players & Picks",
+    (startup_picks$pos!='PICK' & startup_picks$draft_year != year(Sys.Date())) |
+      stringr::str_detect(startup_picks$player, year(Sys.Date()))
+  )
+
+  startup_picks[
+    filter_vec
+  ][order(-value)
+  ][, pick := seq_len(.N)
+  ][,`:=`(startup_round = (pick  %/% .league_size)+1,
+          startup_pick = round(pick %% .league_size,0),
+          age = NA)
+  ][,player := paste0("Startup Pick ",startup_round,".",str_pad(startup_pick,2,'left',0))
+  ]
+
+  rbindlist(list(startup_picks,df))[
+    order(-value,player)
+  ]
 }

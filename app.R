@@ -1,9 +1,11 @@
 players_raw <- as.data.table(read_parquet('data/player_raw.parquet'))
 picks_raw <- as.data.table(read_parquet('data/picks_raw.parquet'))
 
+prefill <- values_generate(players_raw,picks_raw)
+
 ui <- ui_mainpage(
   f7TabLayout(
-    use_sever(),
+    useSever(),
     use_glouton(),
     shinyjs::useShinyjs(),
     tags$head(tags$script(src = "dpcalc.js")),
@@ -32,7 +34,7 @@ ui <- ui_mainpage(
           inputId = "players_teamA",
           label = "Add Players to Team A",
           multiple = TRUE,
-          choices = NULL,
+          choices = prefill$Player,
           openIn = "popup",
           searchbar = TRUE,
           virtualList = TRUE
@@ -43,7 +45,7 @@ ui <- ui_mainpage(
           label = "Add Players to Team B",
           multiple = TRUE,
           openIn = "popup",
-          choices = NULL,
+          choices = prefill$Player,
           searchbar = TRUE,
           virtualList = TRUE
         ),
@@ -78,7 +80,7 @@ ui <- ui_mainpage(
             f7Card(div(textOutput('teamA_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
             uiOutput('result_table_teamA'),
             f7Card(div(textOutput('teamB_total'),style = "font-size:larger;font-weight:700;"), inset = TRUE),
-            uiOutput('result_table_teamA'),
+            uiOutput('result_table_teamB'),
             dp_donations(),
             f7Card(title = "Trade Plot", inset = TRUE, mobileOutput('trade_plot')),
             uiOutput('tradewizard'),
@@ -149,10 +151,11 @@ server <- function(input, output, session) {
 
   sever_joke() # cleans up disconnect screen
   session$allowReconnect(TRUE)
+
   # Input Updates ----
 
   observeEvent(input$teams,{
-    if(parse_number(input$teams) >= 20 & input$qb_type != "2QB/SF"){
+    if(.parse_number(input$teams) >= 20 & input$qb_type != "2QB/SF"){
       updateF7SmartSelect(inputId = "qb_type", selected = "2QB/SF")
       f7Toast(
         text = "Whoa, big league! Switching QB type to SF.",
@@ -164,33 +167,46 @@ server <- function(input, output, session) {
 
   # Calculate Actual Values ----
 
-  values <- reactive({
-    shinyMobile::showF7Preloader()
-    values_generate(players_raw,picks_raw,
-                    input$qb_type,input$teams,input$value_factor,
-                    input$rookie_optimism,input$draft_type,input$future_factor,
-                    c('Player','Age','Value'))
-  })
+  rv <- reactiveValues()
 
-  values <- debounce(values,500)
+  rv$values <- prefill
+
+  observeEvent({
+    paste(input$qb_type,
+      input$teams,
+      input$value_factor,
+      input$rookie_optimism,
+      input$draft_type,
+      input$future_factor)
+  },{
+    shinyMobile::showF7Preloader()
+    rv$values <- values_generate(players_raw = players_raw,
+                                 picks_raw = picks_raw,
+                                 qb_type = input$qb_type,
+                                 league_size = input$teams,
+                                 value_factor = input$value_factor,
+                                 rookie_optimism = input$rookie_optimism,
+                                 draft_type = input$draft_type,
+                                 future_factor = input$future_factor
+    )
+    updateF7SmartSelect("players_teamA", choices = rv$values$Player)
+    updateF7SmartSelect("players_teamB", choices = rv$values$Player)
+
+    Sys.sleep(1)
+
+    shinyMobile::hideF7Preloader()
+  }, ignoreInit = FALSE)
 
   # Update input fields ----
 
-  observeEvent(values(),{
-    updateF7SmartSelect("players_teamA", choices = values()$Player)
-    updateF7SmartSelect("players_teamB", choices = values()$Player)
-    Sys.sleep(0.5)
-    shinyMobile::hideF7Preloader()
-  },ignoreInit = FALSE)
-
   output$teamA_list <- renderUI({
     req(input$players_teamA)
-    map(input$players_teamA, f7ListItem) %>% f7List(inset = TRUE)
+    lapply(input$players_teamA, f7ListItem) |> f7List(inset = TRUE)
   })
 
   output$teamB_list <- renderUI({
     req(input$players_teamB)
-    map(input$players_teamB, f7ListItem) %>% f7List(inset = TRUE)
+    lapply(input$players_teamB, f7ListItem) |> f7List(inset = TRUE)
   })
 
   observeEvent(input$toggle_inputhelp, {
@@ -200,26 +216,27 @@ server <- function(input, output, session) {
   # Results tab ----
 
   teamA_values <- eventReactive(input$calculate,{
-    values() %>%
-      filter(Player %in% input$players_teamA) %>%
-      arrange(desc(Value))
+    v <- rv$values
+    setDT(v)
+    v[Player %in% input$players_teamA][order(-Value)]
   })
 
   teamB_values <- eventReactive(input$calculate,{
-    values() %>%
-      filter(Player %in% input$players_teamB) %>%
-      arrange(desc(Value))
+    v <- rv$values
+    setDT(v)
+    v[Player %in% input$players_teamB][order(-Value)]
   })
 
   teamA_total <- reactive({
-    teamA_values() %>%
-      summarise(Total = sum(Value)) %>%
-      pull(Total)
+    vA <- teamA_values()
+    setDT(vA)
+    vA[,.(Total = sum(Value))][["Total"]]
   })
+
   teamB_total <- reactive({
-    teamB_values() %>%
-      summarise(Total = sum(Value)) %>%
-      pull(Total)
+    vB <- teamB_values()
+    setDT(vB)
+    vB[,.(Total = sum(Value))][["Total"]]
   })
 
   percent_diff <- reactive({
@@ -239,47 +256,55 @@ server <- function(input, output, session) {
     glouton::add_cookie("dp_draft_type", input$draft_type,options = cookie_options(expire = 1))
     glouton::add_cookie("dp_future_factor", input$future_factor,options = cookie_options(expire = 1))
 
-    gauge_value <- if(teamA_total() > teamB_total()){50+percent_diff()/2} else {50-percent_diff()/2}
+    gauge_value <- if(teamA_total() > teamB_total()) 50+percent_diff()/2 else 50-percent_diff()/2
 
     updateF7Gauge(
       id = "score",
       value = gauge_value,
       valueText = paste0(percent_diff(),'%'),
-      valueTextColor = case_when(teamA_total() == teamB_total() ~ '#ffffff',
-                                 percent_diff() <=5 ~ '#ffffff',
-                                 teamA_total() > teamB_total() ~ '#762a83',
-                                 teamA_total() < teamB_total() ~ '#1b7837',),
-      labelText = case_when(teamA_total() == teamB_total() ~ 'Trade is equal!',
-                            percent_diff() <=5 ~ 'Trade is ~ fair!',
-                            teamA_total() > teamB_total() ~ 'in favour of Team A',
-                            teamA_total() < teamB_total() ~ 'in favour of Team B'),
+      valueTextColor = data.table::fcase(teamA_total() == teamB_total(), '#ffffff',
+                                         percent_diff() <=5, '#ffffff',
+                                         teamA_total() > teamB_total(), '#762a83',
+                                         teamA_total() < teamB_total(), '#1b7837'),
+      labelText = data.table::fcase(teamA_total() == teamB_total(), 'Trade is equal!',
+                                    percent_diff() <=5, 'Trade is ~ fair!',
+                                    teamA_total() > teamB_total(), 'in favour of Team A',
+                                    teamA_total() < teamB_total(), 'in favour of Team B')
     )
 
     updateF7Tabs(session, id = 'tabs', selected = 'Analysis')
   })
 
-  output$teamA_total <- renderText({ paste("Team A total:",format(teamA_total(),big.mark = ',')) })
-  output$teamB_total <- renderText({ paste("Team B total:",format(teamB_total(),big.mark = ',')) })
+  output$teamA_total <- renderText( paste("Team A total:",format(teamA_total(),big.mark = ',')) )
+  output$teamB_total <- renderText( paste("Team B total:",format(teamB_total(),big.mark = ',')) )
 
   output$trade_plot <- render_mobile({
 
-    tibble(Team = c('Team A','Team B'),
-           Players = list(teamA_values(),teamB_values())) %>%
-      unnest(Players) %>%
-      mobile(aes(x = Team, y = Value, color = Player, adjust = stack)) %>%
-      mobile_bar() %>%
+    vA <- teamA_values()
+    setDT(vA)
+    vA[,Team := "Team A"]
+
+    vB <- teamB_values()
+    setDT(vB)
+    vB[,Team := "Team B"]
+
+    data.table::rbindlist(list(vA,vB)) |>
+      mobile(aes(x = Team, y = Value, color = Player, adjust = stack)) |>
+      mobile_bar() |>
       mobile_legend(position = 'bottom')
 
   })
 
   output$tradewizard <- renderUI({
 
-    req(percent_diff()>5 | is.infinite(percent_diff()))
+    req(percent_diff() > 5 | is.infinite(percent_diff()))
 
-    trade_diff <- abs(teamA_total()-teamB_total())
+    v <- rv$values
+    setDT(v)
 
-    tradebalancer_table <- values() %>%
-      filter(Value<=(trade_diff*1.05),Value>=(trade_diff*0.95))
+    trade_diff <- abs(teamA_total() - teamB_total())
+
+    tradebalancer_table <- v[Value<=(trade_diff*1.05),Value>=(trade_diff*0.95),]
 
     tagList(
       f7Card(title = "Trade Wizard", inset = TRUE,
@@ -294,9 +319,9 @@ server <- function(input, output, session) {
   # values tab ----
 
   value_display <- reactive({
-    if(!isTruthy(input$value_search)) return(values())
-    values() %>%
-      dplyr::filter(str_detect(tolower(Player),fixed(tolower(input$value_search))))
+    if(!isTruthy(input$value_search)) return(rv$values)
+    v <- rv$values
+    v[str_detect(tolower(Player),fixed(tolower(input$value_search)))]
   })
 
   output$values <- renderUI({
@@ -324,7 +349,7 @@ server <- function(input, output, session) {
 
     tradeID <- UUIDgenerate(1,use.time = TRUE)
 
-    saved_data <- tibble(
+    saved_data <- data.frame(
       trade_id = tradeID,
       session_id = sessionID,
       timestamp = Sys.time(),
@@ -340,25 +365,26 @@ server <- function(input, output, session) {
       teamA_total = teamA_total(),
       teamB_players = paste(input$players_teamB, sep = "", collapse = " | "),
       teamB_values = paste0(teamB_values()$Value, sep = "", collapse = " | "),
-      teamB_total = teamB_total()
+      teamB_total = teamB_total(),
+      stringsAsFactors = FALSE
     )
 
     try(arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet"))))
   })
 
-  # observeEvent(
-  #   eventExpr = TRUE,{
-  #
-  #     all_cookies <- fetch_cookies()
-  #
-  #     if(!is.null(all_cookies[["qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["qb_type"]])
-  #     if(!is.null(all_cookies[["teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["teams"]])
-  #     if(!is.null(all_cookies[["draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["draft_type"]])
-  #     if(!is.null(all_cookies[["value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["value_factor"]]))
-  #     if(!is.null(all_cookies[["rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["rookie_optimism"]]))
-  #     if(!is.null(all_cookies[["future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["future_factor"]]))
-  #
-  #   }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
+  observeEvent(
+    eventExpr = TRUE,{
+
+      all_cookies <- fetch_cookies()
+
+      if(!is.null(all_cookies[["qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["qb_type"]])
+      if(!is.null(all_cookies[["teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["teams"]])
+      if(!is.null(all_cookies[["draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["draft_type"]])
+      if(!is.null(all_cookies[["value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["value_factor"]]))
+      if(!is.null(all_cookies[["rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["rookie_optimism"]]))
+      if(!is.null(all_cookies[["future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["future_factor"]]))
+
+    }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
 
 } # end of server segment ----
 
