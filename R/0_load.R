@@ -4,7 +4,7 @@ suppressPackageStartupMessages({
 
   # Data manipulation
   library(purrr)
-  library(dplyr)
+  # library(dplyr)
   library(stringr)
   library(sever)
   library(shiny)

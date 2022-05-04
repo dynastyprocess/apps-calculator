@@ -1,26 +1,30 @@
+options(shiny.autoload.r = FALSE)
+pkgload::load_all()
 players_raw <- as.data.table(read_parquet('data/player_raw.parquet'))
 picks_raw <- as.data.table(read_parquet('data/picks_raw.parquet'))
-
 prefill <- values_generate(players_raw,picks_raw)
 
 ui <- ui_mainpage(
   f7TabLayout(
-    useSever(),
-    use_glouton(),
+    # useSever(),
+    # use_glouton(online = FALSE),
     shinyjs::useShinyjs(),
-    tags$head(tags$script(src = "dpcalc.js")),
+    tags$head(
+      tags$script(
+        HTML("$(document).on('shiny:connected', (e)=> {$('#sever_screen').remove();});")
+      )),
+    tags$link(rel = "stylesheet", href = "dp.css"),
     meta() %>%
       meta_social(
         title = "Trade Calculator - DynastyProcess.com",
         description = "A dynasty trade calculator that you can customize for your strategy and league!",
         url = "https://apps.dynastyprocess.com/calculator",
-        image = "header_small.png",
+        image = "https://raw.githubusercontent.com/dynastyprocess/graphics/main/apps/calc-logo.png",
         image_alt = "DynastyProcess Calculator logo",
         twitter_creator = "@_TanHo",
         twitter_card_type = "summary",
         twitter_site = "@DynastyProcess"
       ),
-    includeCSS("www/dp.css"),
     navbar = ui_header(),
     panels = ui_sidebar(),
     appbar = NULL,
@@ -149,7 +153,7 @@ ui <- ui_mainpage(
 )
 server <- function(input, output, session) {
 
-  sever_joke() # cleans up disconnect screen
+  # sever_joke() # cleans up disconnect screen
   session$allowReconnect(TRUE)
 
   # Input Updates ----
@@ -192,10 +196,8 @@ server <- function(input, output, session) {
     updateF7SmartSelect("players_teamA", choices = rv$values$Player)
     updateF7SmartSelect("players_teamB", choices = rv$values$Player)
 
-    Sys.sleep(1)
-
     shinyMobile::hideF7Preloader()
-  }, ignoreInit = FALSE)
+  })
 
   # Update input fields ----
 
@@ -249,12 +251,12 @@ server <- function(input, output, session) {
     shinyjs::hide(id = "analysis_placeholder")
     shinyjs::show(id = "result_div")
 
-    glouton::add_cookie("dp_qb_type", input$qb_type,options = cookie_options(expire = 1))
-    glouton::add_cookie("dp_teams", input$teams,options = cookie_options(expire = 1))
-    glouton::add_cookie("dp_value_factor", input$value_factor,options = cookie_options(expire = 1))
-    glouton::add_cookie("dp_rookie_optimism", input$rookie_optimism,options = cookie_options(expire = 1))
-    glouton::add_cookie("dp_draft_type", input$draft_type,options = cookie_options(expire = 1))
-    glouton::add_cookie("dp_future_factor", input$future_factor,options = cookie_options(expire = 1))
+    # glouton::add_cookie("dp_qb_type", input$qb_type,options = cookie_options(expire = 1))
+    # glouton::add_cookie("dp_teams", input$teams,options = cookie_options(expire = 1))
+    # glouton::add_cookie("dp_value_factor", input$value_factor,options = cookie_options(expire = 1))
+    # glouton::add_cookie("dp_rookie_optimism", input$rookie_optimism,options = cookie_options(expire = 1))
+    # glouton::add_cookie("dp_draft_type", input$draft_type,options = cookie_options(expire = 1))
+    # glouton::add_cookie("dp_future_factor", input$future_factor,options = cookie_options(expire = 1))
 
     gauge_value <- if(teamA_total() > teamB_total()) 50+percent_diff()/2 else 50-percent_diff()/2
 
@@ -374,20 +376,20 @@ server <- function(input, output, session) {
       arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet")))
     })
   })
-
-  observeEvent(
-    eventExpr = TRUE,{
-
-      all_cookies <- fetch_cookies()
-
-      if(!is.null(all_cookies[["dp_qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["dp_qb_type"]])
-      if(!is.null(all_cookies[["dp_teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["dp_teams"]])
-      if(!is.null(all_cookies[["dp_draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["dp_draft_type"]])
-      if(!is.null(all_cookies[["dp_value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["dp_value_factor"]]))
-      if(!is.null(all_cookies[["dp_rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["dp_rookie_optimism"]]))
-      if(!is.null(all_cookies[["dp_future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["dp_future_factor"]]))
-
-    }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
+  #
+  #   observeEvent(
+  #     eventExpr = TRUE,{
+  #
+  #       all_cookies <- fetch_cookies()
+  #
+  #       if(!is.null(all_cookies[["dp_qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["dp_qb_type"]])
+  #       if(!is.null(all_cookies[["dp_teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["dp_teams"]])
+  #       if(!is.null(all_cookies[["dp_draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["dp_draft_type"]])
+  #       if(!is.null(all_cookies[["dp_value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["dp_value_factor"]]))
+  #       if(!is.null(all_cookies[["dp_rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["dp_rookie_optimism"]]))
+  #       if(!is.null(all_cookies[["dp_future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["dp_future_factor"]]))
+  #
+  #     }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
 
 } # end of server segment ----
 
