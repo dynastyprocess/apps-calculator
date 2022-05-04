@@ -1,13 +1,12 @@
-options(shiny.autoload.r = FALSE)
 pkgload::load_all()
-players_raw <- as.data.table(read_parquet('data/player_raw.parquet'))
-picks_raw <- as.data.table(read_parquet('data/picks_raw.parquet'))
-prefill <- values_generate(players_raw,picks_raw)
+df_players <- as.data.table(readRDS('data/players.rds'))
+df_picks <- as.data.table(readRDS('data/picks.rds'))
+prefill <- as.data.table(readRDS("data/prefill.rds"))
 
 ui <- ui_mainpage(
   f7TabLayout(
-    # useSever(),
-    # use_glouton(online = FALSE),
+    useSever(),
+    use_glouton(),
     shinyjs::useShinyjs(),
     tags$head(
       tags$script(
@@ -120,7 +119,7 @@ ui <- ui_mainpage(
         dp_donations(),
         br(),
         f7Card(
-          glue("ECR last updated: {players_raw$scrape_date[[1]]}")
+          glue("ECR last updated: {df_players$scrape_date[[1]]}")
         ),
         br(),
         f7Card(
@@ -175,17 +174,21 @@ server <- function(input, output, session) {
 
   rv$values <- prefill
 
+  triggers <- reactive({paste(input$qb_type,
+                  input$teams,
+                  input$value_factor,
+                  input$rookie_optimism,
+                  input$draft_type,
+                  input$future_factor)})
+
+  triggers <- debounce(triggers,500)
+
   observeEvent({
-    paste(input$qb_type,
-          input$teams,
-          input$value_factor,
-          input$rookie_optimism,
-          input$draft_type,
-          input$future_factor)
+    triggers()
   },{
     shinyMobile::showF7Preloader()
-    rv$values <- values_generate(players_raw = players_raw,
-                                 picks_raw = picks_raw,
+    rv$values <- values_generate(df_players = df_players,
+                                 df_picks = df_picks,
                                  qb_type = input$qb_type,
                                  league_size = input$teams,
                                  value_factor = input$value_factor,
@@ -323,7 +326,7 @@ server <- function(input, output, session) {
   value_display <- reactive({
     if(!isTruthy(input$value_search)) return(rv$values)
     v <- rv$values
-    v[str_detect(tolower(Player),fixed(tolower(input$value_search)))]
+    v[grepl(pattern = tolower(input$value_search),x = tolower(Player),fixed = TRUE)]
   })
 
   output$values <- renderUI({
@@ -337,7 +340,7 @@ server <- function(input, output, session) {
 
   f7Toast(
     session = session,
-    text = glue("ECR last updated {players_raw$scrape_date[[1]]}"),
+    text = glue("ECR last updated {df_players$scrape_date[[1]]}"),
     position = "bottom",
     closeTimeout = 3000)
 
@@ -373,23 +376,22 @@ server <- function(input, output, session) {
         stringsAsFactors = FALSE
       )
 
-      arrow::write_parquet(saved_data,file.path("storage",paste0(tradeID,".parquet")))
+      saveRDS(saved_data,file.path("storage",paste0(tradeID,".rds")))
     })
   })
-  #
-  #   observeEvent(
-  #     eventExpr = TRUE,{
-  #
-  #       all_cookies <- fetch_cookies()
-  #
-  #       if(!is.null(all_cookies[["dp_qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["dp_qb_type"]])
-  #       if(!is.null(all_cookies[["dp_teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["dp_teams"]])
-  #       if(!is.null(all_cookies[["dp_draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["dp_draft_type"]])
-  #       if(!is.null(all_cookies[["dp_value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["dp_value_factor"]]))
-  #       if(!is.null(all_cookies[["dp_rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["dp_rookie_optimism"]]))
-  #       if(!is.null(all_cookies[["dp_future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["dp_future_factor"]]))
-  #
-  #     }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
+    observeEvent(
+      eventExpr = TRUE,{
+
+        all_cookies <- fetch_cookies()
+
+        if(!is.null(all_cookies[["dp_qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["dp_qb_type"]])
+        if(!is.null(all_cookies[["dp_teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["dp_teams"]])
+        if(!is.null(all_cookies[["dp_draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["dp_draft_type"]])
+        if(!is.null(all_cookies[["dp_value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["dp_value_factor"]]))
+        if(!is.null(all_cookies[["dp_rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["dp_rookie_optimism"]]))
+        if(!is.null(all_cookies[["dp_future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["dp_future_factor"]]))
+
+      }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
 
 } # end of server segment ----
 

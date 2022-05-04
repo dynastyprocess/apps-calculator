@@ -2,8 +2,8 @@
 # pkgload::load_all()
 .datatable.aware <- TRUE
 
-values_generate <- function(players_raw,
-                            picks_raw,
+values_generate <- function(df_players,
+                            df_picks,
                             qb_type = "1QB",
                             league_size = "12 teams",
                             value_factor = 235,
@@ -14,14 +14,14 @@ values_generate <- function(players_raw,
   ## minor preprocessing
   .league_size <- .parse_number(league_size)
 
-  pick_values <- picks_raw |>
+  pick_values <- df_picks |>
     .calc_currentpicks( rookie_optimism, qb_type) |>
     .label_currentpicks(.league_size) |>
     .calculate_value(value_factor) |>
     .add_futurepicks(future_factor, .league_size) |>
     .filter_rookiepicks()
 
-  player_values <- players_raw |>
+  player_values <- df_players |>
     .select_qbtype(qb_type) |>
     .calculate_value(value_factor)
 
@@ -36,15 +36,17 @@ values_generate <- function(players_raw,
   as.numeric(gsub(pattern = "([0-9]+).+", replacement = "\\1",x = vec))
 }
 
-.calc_currentpicks <- function(picks_raw, rookie_opt, qb_type){
+.str_pad <- function(vec) substr(paste0("0",vec),nchar(vec),nchar(vec)+1)
 
-  high_model <-  if(qb_type == "1QB") picks_raw$ecr_high_1qb else picks_raw$ecr_high_2qb
-  low_model <- if(qb_type == "1QB") picks_raw$ecr_low_1qb else picks_raw$ecr_low_2qb
+.calc_currentpicks <- function(df_picks, rookie_opt, qb_type){
+
+  high_model <-  if(qb_type == "1QB") df_picks$ecr_high_1qb else df_picks$ecr_high_2qb
+  low_model <- if(qb_type == "1QB") df_picks$ecr_low_1qb else df_picks$ecr_low_2qb
   high_factor <-  rookie_opt/100
   low_factor <-  1 - (rookie_opt/100)
   ecr <- high_factor * high_model + low_factor*low_model
 
-  pick_values <- picks_raw[, ecr := ecr]
+  pick_values <- df_picks[, ecr := ecr]
 
   return(pick_values)
 }
@@ -56,7 +58,7 @@ values_generate <- function(players_raw,
     ,`:=`(season = lubridate::year(lubridate::as_date(scrape_date)),
           rookie_round = (pick %/% .league_size) + 1,
           round_pick = round(pick %% .league_size,0))
-  ][, pick_label := paste0(season," Pick ",as.character(rookie_round),".",str_pad(round_pick,2,'left',0))
+  ][, pick_label := paste0(season," Pick ",as.character(rookie_round),".",.str_pad(round_pick))
   ]
   return(pick_values)
 }
@@ -170,7 +172,7 @@ values_generate <- function(players_raw,
     draft_type == 'Startup (Players Only)', startup_picks$pos != "PICK",
     draft_type == "Startup (Players & Picks",
     (startup_picks$pos!='PICK' & startup_picks$draft_year != year(Sys.Date())) |
-      stringr::str_detect(startup_picks$player, year(Sys.Date()))
+      grepl(x = startup_picks$player,pattern = year(Sys.Date()))
   )
 
   startup_picks[
@@ -180,7 +182,7 @@ values_generate <- function(players_raw,
   ][,`:=`(startup_round = (pick  %/% .league_size)+1,
           startup_pick = round(pick %% .league_size,0),
           age = NA)
-  ][,player := paste0("Startup Pick ",startup_round,".",str_pad(startup_pick,2,'left',0))
+  ][,player := paste0("Startup Pick ",startup_round,".",.str_pad(startup_pick))
   ]
 
   rbindlist(list(startup_picks,df))[

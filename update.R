@@ -19,16 +19,19 @@ update_local_values <- function(){
 
   players <- players[,player := paste0(nflreadr::clean_player_names(player),", ",pos," ",team)]
 
-  arrow::write_parquet(players, 'data/player_raw.parquet')
+  saveRDS(players,"data/players.rds")
+  arrow::write_parquet(players, 'data/players.parquet')
 
   picks <- data.table::fread("https://raw.githubusercontent.com/dynastyprocess/data/master/files/values-picks.csv")
 
   picks <- picks[!is.na(pick),]
 
-  arrow::write_parquet(picks, 'data/picks_raw.parquet')
+  saveRDS(picks, "data/picks.rds")
+  arrow::write_parquet(picks, 'data/picks.parquet')
 
-  # prefill <- values_generate(players_raw, picks_raw)
-
+  prefill <- values_generate(players, picks)
+  saveRDS(prefill, "data/prefill.rds")
+  # prefill <- values_generate(df_players, df_picks)
   # arrow::write_parquet(prefill,"data/prefill.parquet")
 
   on.exit(NULL)
