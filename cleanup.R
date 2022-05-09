@@ -16,10 +16,10 @@ cleanup <- function(){
 
   list_trades <- list.files("storage", recursive = TRUE, full.names = TRUE)
 
-  upload_path <- glue::glue("storage/trades_{as.numeric(Sys.time())}.parquet")
+  upload_path <- glue::glue("storage/trades_{as.numeric(Sys.time())}.rds")
 
   arrow::write_parquet(
-    data.table::rbindlist(lapply(list_trades, arrow::read_parquet)),
+    data.table::rbindlist(lapply(list_trades, readRDS)),
     upload_path)
 
   piggyback::pb_upload(upload_path,
@@ -27,7 +27,6 @@ cleanup <- function(){
                        tag = "trade_data")
 
   fs::file_delete(list_trades)
-
   fs::file_delete(upload_path)
 
   on.exit(NULL)

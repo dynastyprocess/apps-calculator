@@ -1,5 +1,4 @@
 suppressPackageStartupMessages({
-  library(arrow)
   library(data.table)
   library(httr)
   library(glue)
@@ -20,14 +19,14 @@ update_local_values <- function(){
   players <- players[,player := paste0(nflreadr::clean_player_names(player),", ",pos," ",team)]
 
   saveRDS(players,"data/players.rds")
-  arrow::write_parquet(players, 'data/players.parquet')
+  # arrow::write_parquet(players, 'data/players.parquet')
 
   picks <- data.table::fread("https://raw.githubusercontent.com/dynastyprocess/data/master/files/values-picks.csv")
 
   picks <- picks[!is.na(pick),]
 
   saveRDS(picks, "data/picks.rds")
-  arrow::write_parquet(picks, 'data/picks.parquet')
+  # arrow::write_parquet(picks, 'data/picks.parquet')
 
   prefill <- values_generate(players, picks)
   saveRDS(prefill, "data/prefill.rds")
