@@ -8,7 +8,6 @@ suppressPackageStartupMessages({
   library(shiny)
   library(shinyMobile) # tanho63/shinymobile
   library(mobileCharts) # rinterface/mobileCharts
-  library(sever) # johncoene/sever
   library(metathis)
   library(glouton)
 

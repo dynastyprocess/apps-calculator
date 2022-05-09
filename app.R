@@ -1,24 +1,23 @@
-pkgload::load_all()
 df_players <- as.data.table(readRDS('data/players.rds'))
 df_picks <- as.data.table(readRDS('data/picks.rds'))
 prefill <- as.data.table(readRDS("data/prefill.rds"))
 
 ui <- ui_mainpage(
   f7TabLayout(
-    useSever(),
+    # useSever(),
     use_glouton(),
     shinyjs::useShinyjs(),
-    tags$head(
-      tags$script(
-        HTML("$(document).on('shiny:connected', (e)=> {$('#sever_screen').remove();});")
-      )),
+    # tags$head(
+    #   tags$script(
+    #     HTML("$(document).on('shiny:connected', (e)=> {$('#sever_screen').remove();});")
+    #   )),
     tags$link(rel = "stylesheet", href = "dp.css"),
     meta() %>%
       meta_social(
         title = "Trade Calculator - DynastyProcess.com",
         description = "A dynasty trade calculator that you can customize for your strategy and league!",
         url = "https://apps.dynastyprocess.com/calculator",
-        image = "https://raw.githubusercontent.com/dynastyprocess/graphics/main/apps/calc-logo.png",
+        image = "icons/calculator_logo.svg",
         image_alt = "DynastyProcess Calculator logo",
         twitter_creator = "@_TanHo",
         twitter_card_type = "summary",
@@ -108,7 +107,7 @@ ui <- ui_mainpage(
         icon = f7Icon('info_circle_fill'),
         br(),
         div(
-          img(src = 'https://github.com/dynastyprocess/graphics/raw/main/.dynastyprocess/dp_hex.svg',
+          img(src = 'icons/dp_hex.svg',
               style = 'max-width: 128px;'),
           style = 'text-align:center;'),
         br(),
@@ -129,18 +128,17 @@ ui <- ui_mainpage(
             f7ListItem(
               title = "Twitter",
               media = f7Icon('logo_twitter'),
-              url = "https://www.twitter.com/dynastyprocess"
+              href = "https://www.twitter.com/dynastyprocess"
             ),
             f7ListItem(
               title = "Data Repository",
               media = f7Icon('archivebox_fill'),
-              url = "https://www.github.com/dynastyprocess/data"
+              href = "https://www.github.com/dynastyprocess/data"
             ),
             f7ListItem(
               title = "Main Site",
               media = f7Icon('waveform_circle_fill'),
-              url =
-                "https://dynastyprocess.com"
+              href ="https://dynastyprocess.com"
             )
           )
         ),

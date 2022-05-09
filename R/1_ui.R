@@ -5,7 +5,7 @@ ui_mainpage <- function(...){
     # manifest = "manifest.json",
     favicon = "favicon.ico",
     icon = '128x128.png',
-    # allowPWA = TRUE,
+    allowPWA = TRUE,
     # preloader = TRUE,
     # loading_duration = 3,
     options = list(

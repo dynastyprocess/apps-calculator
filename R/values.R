@@ -55,7 +55,7 @@ values_generate <- function(df_players,
   .league_size <- leaguesize + 0.001
 
   pick_values <- pick_values[
-    ,`:=`(season = lubridate::year(lubridate::as_date(scrape_date)),
+    ,`:=`(season = get_year(scrape_date),
           rookie_round = (pick %/% .league_size) + 1,
           round_pick = round(pick %% .league_size,0))
   ][, pick_label := paste0(season," Pick ",as.character(rookie_round),".",.str_pad(round_pick))
@@ -82,7 +82,7 @@ values_generate <- function(df_players,
   .future_factor <- future_factor / 100
   .league_size <- .league_size + 0.001
 
-  today_month <- lubridate::month(Sys.Date())
+  today_month <- get_month(Sys.Date())
 
   n1_factor <- data.table::fcase(
     today_month < 9, .future_factor,
@@ -148,9 +148,9 @@ values_generate <- function(df_players,
 }
 
 .filter_rookiepicks <- function(df,today_date = Sys.Date()){
-  today_month <- lubridate::month(today_date)
+  today_month <- get_month(today_date)
 
-  today_year <- lubridate::year(today_date)
+  today_year <- get_year(today_date)
 
   if(today_month > 8){
     df <- df[season != today_year,]
