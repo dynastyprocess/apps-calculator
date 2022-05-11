@@ -1,16 +1,18 @@
-df_players <- as.data.table(readRDS('data/players.rds'))
-df_picks <- as.data.table(readRDS('data/picks.rds'))
-prefill <- as.data.table(readRDS("data/prefill.rds"))
+dpbucket <- aws.s3::get_bucket(bucket = 'dpcalc',region = "")
+
+df_players <- aws.s3::s3readRDS("values/players.rds", bucket = dpbucket, region = "")
+df_picks <- aws.s3::s3readRDS("values/picks.rds", bucket = dpbucket, region = "")
+prefill <- aws.s3::s3readRDS("values/prefill.rds", bucket = dpbucket, region = "")
 
 ui <- ui_mainpage(
   f7TabLayout(
-    # useSever(),
+    useSever(),
     use_glouton(),
     shinyjs::useShinyjs(),
-    # tags$head(
-    #   tags$script(
-    #     HTML("$(document).on('shiny:connected', (e)=> {$('#sever_screen').remove();});")
-    #   )),
+    tags$head(
+      tags$script(
+        HTML("$(document).on('shiny:connected', (e)=> {$('#sever_screen').remove();});")
+      )),
     tags$link(rel = "stylesheet", href = "dp.css"),
     meta() %>%
       meta_social(
@@ -150,8 +152,8 @@ ui <- ui_mainpage(
 )
 server <- function(input, output, session) {
 
-  # sever_joke() # cleans up disconnect screen
-  session$allowReconnect(TRUE)
+  sever_joke() # cleans up disconnect screen
+  # session$allowReconnect(TRUE)
 
   # Input Updates ----
 
@@ -252,12 +254,12 @@ server <- function(input, output, session) {
     shinyjs::hide(id = "analysis_placeholder")
     shinyjs::show(id = "result_div")
 
-    # glouton::add_cookie("dp_qb_type", input$qb_type,options = cookie_options(expire = 1))
-    # glouton::add_cookie("dp_teams", input$teams,options = cookie_options(expire = 1))
-    # glouton::add_cookie("dp_value_factor", input$value_factor,options = cookie_options(expire = 1))
-    # glouton::add_cookie("dp_rookie_optimism", input$rookie_optimism,options = cookie_options(expire = 1))
-    # glouton::add_cookie("dp_draft_type", input$draft_type,options = cookie_options(expire = 1))
-    # glouton::add_cookie("dp_future_factor", input$future_factor,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_qb_type", input$qb_type,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_teams", input$teams,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_value_factor", input$value_factor,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_rookie_optimism", input$rookie_optimism,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_draft_type", input$draft_type,options = cookie_options(expire = 1))
+    glouton::add_cookie("dp_future_factor", input$future_factor,options = cookie_options(expire = 1))
 
     gauge_value <- if(teamA_total() > teamB_total()) 50+percent_diff()/2 else 50-percent_diff()/2
 
@@ -351,10 +353,9 @@ server <- function(input, output, session) {
     req(teamA_values(),teamB_values())
 
     try({
-
       tradeID <- UUIDgenerate(1,use.time = TRUE)
 
-      saved_data <- tibble::tibble(
+      saved_data <- data.table::data.table(
         trade_id = tradeID,
         session_id = sessionID,
         timestamp = Sys.time(),
@@ -374,7 +375,7 @@ server <- function(input, output, session) {
         stringsAsFactors = FALSE
       )
 
-      saveRDS(saved_data,file.path("storage",paste0(tradeID,".rds")))
+      aws.s3::s3saveRDS(saved_data,object = glue::glue("trades/{tradeID}.rds"),bucket = dpbucket, region = "")
     })
   })
     observeEvent(

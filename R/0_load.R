@@ -9,7 +9,9 @@ suppressPackageStartupMessages({
   library(shinyMobile) # tanho63/shinymobile
   library(mobileCharts) # rinterface/mobileCharts
   library(metathis)
+  library(sever)
   library(glouton)
+  library(aws.s3)
 
   options(dplyr.summarise.inform = FALSE)
 })
