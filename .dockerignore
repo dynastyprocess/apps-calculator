@@ -4,3 +4,5 @@
 .gitignore
 .Rbuildignore
 dev
+storage
+data

@@ -1,6 +1,6 @@
 Package: DynastyProcessTradeCalculator
 Title: A Customizable Dynasty Trade Calculator
-Version: 3.0.0.9000
+Version: 3.0.1
 Authors@R: 
     person(given = "Tan",
            family = "Ho",
@@ -17,6 +17,7 @@ Imports:
     data.table,
     glouton,
     glue,
+    joker,
     markdown,
     metathis,
     mobileCharts,
@@ -26,6 +27,7 @@ Imports:
     shinyjs,
     uuid
 Remotes: 
+    tanho63/joker,
     tanho63/shinyMobile@rc-1.0.0,
     RinteRface/mobileCharts,
     colinfay/glouton

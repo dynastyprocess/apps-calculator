@@ -12,6 +12,7 @@ suppressPackageStartupMessages({
   library(sever)
   library(glouton)
   library(aws.s3)
+  library(joker)
 
   options(dplyr.summarise.inform = FALSE)
 })
