@@ -168,14 +168,14 @@ values_generate <- function(df_players,
 
   startup_picks <- copy(df)
 
-  filter_vec <- data.table::fcase(
-    draft_type == 'Startup (Players Only)', startup_picks$pos != "PICK",
-    draft_type == "Startup (Players & Picks",
-    (startup_picks$pos!='PICK' & startup_picks$draft_year != year(Sys.Date())) |
+  filter_vec <- switch(
+    draft_type,
+    'Startup (Players Only)' = startup_picks$pos != "PICK",
+    'Startup (Players & Picks)' = (startup_picks$pos!='PICK' & startup_picks$draft_year != year(Sys.Date())) |
       grepl(x = startup_picks$player,pattern = year(Sys.Date()))
   )
 
-  startup_picks[
+  startup_picks <- startup_picks[
     filter_vec
   ][order(-value)
   ][, pick := seq_len(.N)
@@ -185,7 +185,7 @@ values_generate <- function(df_players,
   ][,player := paste0("Startup Pick ",startup_round,".",.str_pad(startup_pick))
   ]
 
-  rbindlist(list(startup_picks,df))[
+  rbindlist(list(startup_picks,df),fill = TRUE)[
     order(-value,player)
   ]
 }

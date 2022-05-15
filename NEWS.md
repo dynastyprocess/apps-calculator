@@ -1,3 +1,15 @@
+# DPTC 3.1.1
+- Fix bugs related to Startup Mode.
+
+# DPTC 3.1.0
+
+- Uses Docker + rhub/r-minimal
+- Rewrites logic to data.table
+- Uses DigitalOcean as storage platform and aws.s3 to interact with it
+- Uses DigitalOcean App Platform now
+- Environment variables are required to run the app and interact with the production bucket. 
+  - If attempting to replicate on your own, must have values/ folder with various things in it as well as a trades/ folder as a data dump
+
 # DynastyProcess Trade Calculator 3.0.0
 
 Changes

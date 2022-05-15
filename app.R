@@ -1,4 +1,4 @@
-dpbucket <- aws.s3::get_bucket(bucket = 'dpcalc',region = "")
+dpbucket <- aws.s3::get_bucket(bucket = 'dpcalc', region = "")
 
 df_players <- aws.s3::s3readRDS("values/players.rds", bucket = dpbucket, region = "")
 df_picks <- aws.s3::s3readRDS("values/picks.rds", bucket = dpbucket, region = "")
