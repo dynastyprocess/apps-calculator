@@ -1,5 +1,8 @@
 # DPTC 3.1.1
+
 - Fix bugs related to Startup Mode.
+- Add version tag to about page
+- Maybe fixup metatag?
 
 # DPTC 3.1.0
 

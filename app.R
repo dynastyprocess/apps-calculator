@@ -27,7 +27,7 @@ ui <- ui_mainpage(
       meta_social(
         title = "Trade Calculator - DynastyProcess.com",
         description = "A dynasty trade calculator that you can customize for your strategy and league!",
-        url = "https://apps.dynastyprocess.com/calculator",
+        url = "https://calc.dynastyprocess.com",
         image = "icons/calculator_logo.svg",
         image_alt = "DynastyProcess Calculator logo",
         twitter_creator = "@_TanHo",
@@ -152,6 +152,10 @@ ui <- ui_mainpage(
               href ="https://dynastyprocess.com"
             )
           )
+        ),
+        br(),
+        f7Card(
+          glue("App version: v{packageVersion('DynastyProcessTradeCalculator')}")
         ),
         ui_spacer()
         # f7Card(title = "Popular Players")
