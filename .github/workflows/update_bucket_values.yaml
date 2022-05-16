@@ -1,0 +1,36 @@
+on:
+  schedule:
+    - cron: 3 3 * * 5
+  workflow_dispatch:
+
+name: update_bucket_values
+
+jobs:
+  update_bucket_values:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.DO_S3_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_S3_SECRET }}
+      AWS_S3_ENDPOINT: ${{ secrets.DO_S3_ENDPOINT }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            data.table
+            aws.s3
+            nflreadr
+            cli
+            pkgload
+            here
+
+      - name: Deploy package
+        run: |
+          Rscript -e 'source("dev/update.R")'
