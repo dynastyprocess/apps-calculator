@@ -1,6 +1,6 @@
 Package: DynastyProcessTradeCalculator
 Title: A Customizable Dynasty Trade Calculator
-Version: 3.1.1
+Version: 3.1.2
 Authors@R: 
     person(given = "Tan",
            family = "Ho",

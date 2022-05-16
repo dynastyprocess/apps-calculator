@@ -1,7 +1,4 @@
 dpbucket <- aws.s3::get_bucket(bucket = 'dpcalc', region = "")
-
-df_players <- aws.s3::s3readRDS("values/players.rds", bucket = dpbucket, region = "")
-df_picks <- aws.s3::s3readRDS("values/picks.rds", bucket = dpbucket, region = "")
 prefill <- aws.s3::s3readRDS("values/prefill.rds", bucket = dpbucket, region = "")
 
 ui <- ui_mainpage(
@@ -129,7 +126,7 @@ ui <- ui_mainpage(
         dp_donations(),
         br(),
         f7Card(
-          glue("ECR last updated: {df_players$scrape_date[[1]]}")
+          textOutput("update_date")
         ),
         br(),
         f7Card(
@@ -182,10 +179,12 @@ server <- function(input, output, session) {
   })
 
   # Calculate Actual Values ----
+  df_players <- aws.s3::s3readRDS("values/players.rds", bucket = dpbucket, region = "")
+  df_picks <- aws.s3::s3readRDS("values/picks.rds", bucket = dpbucket, region = "")
 
   rv <- reactiveValues()
 
-  rv$values <- prefill
+  rv$values <- values_generate(df_players, df_picks)
 
   triggers <- reactive({paste(input$qb_type,
                   input$teams,
@@ -339,12 +338,12 @@ server <- function(input, output, session) {
   value_display <- reactive({
     if(!isTruthy(input$value_search)) return(rv$values)
     v <- rv$values
-    v[grepl(pattern = tolower(input$value_search),x = tolower(Player),fixed = TRUE)]
+    v[grepl(pattern = tolower(input$value_search), x = tolower(Player), fixed = TRUE),]
   })
 
   output$values <- renderUI({
     div(
-      f7Table(value_display(),card = TRUE),
+      f7Table(value_display(), card = TRUE),
       ui_spacer()
     )
   })
@@ -356,6 +355,8 @@ server <- function(input, output, session) {
     text = glue("ECR last updated {df_players$scrape_date[[1]]}"),
     position = "bottom",
     closeTimeout = 3000)
+
+  output$update_date <- renderText(glue("ECR last updated: {df_players$scrape_date[[1]]}"))
 
   # Save data to a sqlite file on server ----
 
