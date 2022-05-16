@@ -35,4 +35,14 @@ cleanup <- function(){
        body = glue::glue("Successfully cleaned out local data at {Sys.time()}"))
 }
 
-cleanup()
+# cleanup()
+
+suppressPackageStartupMessages({
+  library(data.table)
+  library(nflreadr)
+  library(aws.s3)
+  pkgload::load_all()
+  setwd(here::here())
+})
+
+dpbucket <- aws.s3::get_bucket(bucket = 'dpcalc', region = "")
