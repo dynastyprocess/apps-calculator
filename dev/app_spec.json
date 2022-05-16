@@ -1,0 +1,52 @@
+{
+  "domains": [
+    {
+      "domain": "calc.dynastyprocess.com",
+      "type": "PRIMARY"
+    },
+    {
+      "domain": "calculator.dynastyprocess.com",
+      "type": "ALIAS"
+    }
+  ],
+  "name": "dpcalc",
+  "region": "nyc",
+  "services": [
+    {
+      "envs": [
+        {
+          "key": "AWS_ACCESS_KEY_ID",
+          "scope": "RUN_AND_BUILD_TIME",
+          "type": "SECRET",
+          "value": "EV[1:gG6lK8nCV7Pvbsv2ZktXponIpYegxn22:LFonGiCngXJKrCCymC7HRSPCx9ZBTLQie+qHhf6mmz+4rVks]"
+        },
+        {
+          "key": "AWS_SECRET_ACCESS_KEY",
+          "scope": "RUN_AND_BUILD_TIME",
+          "type": "SECRET",
+          "value": "EV[1:5gVxUU7R3wXe8PJitUNKqSW+prWHv3Tm:+E4hkYU9fGT4fR3YRZrIS4nn4WV/QTNSBTtriUP3N5V3H15L0HaiwJYYEfWORKjWd6BXLDu2muPWoJ0=]"
+        },
+        {
+          "key": "AWS_S3_ENDPOINT",
+          "scope": "RUN_AND_BUILD_TIME",
+          "value": "nyc3.digitaloceanspaces.com"
+        }
+      ],
+      "http_port": 3838,
+      "image": {
+        "registry": "tanho63",
+        "registry_type": "DOCKER_HUB",
+        "repository": "dpcalc",
+        "tag": "3.1.1.01"
+      },
+      "instance_count": 3,
+      "instance_size_slug": "professional-xs",
+      "name": "tanho-63-dpcalc",
+      "routes": [
+        {
+          "path": "/"
+        }
+      ]
+    }
+  ]
+}
