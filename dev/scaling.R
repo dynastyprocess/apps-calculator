@@ -28,13 +28,13 @@ scale_app <- function(n_containers){
                           body = json_spec)
 
   httr::stop_for_status(update_req)
-  
+
   force_redeploy <- httr::POST(paste0(do_baseurl,"apps/",dpcalc_id,"/deployments"),
                                do_auth(),
-                               body = list(force_build = "true") |> 
+                               body = list(force_build = TRUE) |>
                                       jsonlite::toJSON(auto_unbox = TRUE)
                                )
-  
+
   httr::stop_for_status(force_redeploy)
 
   invisible(NULL)
