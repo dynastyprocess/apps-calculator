@@ -43,7 +43,7 @@ scale_app <- function(n_containers){
 run_hour <- lubridate::hour(lubridate::with_tz(Sys.time(),tzone = "America/Toronto"))
 
 # if it's after 9 am and before 10pm, three containers else one container
-n_containers <- ifelse(run_hour >= 9 & run_hour < 22, 2, 2)
+n_containers <- ifelse(run_hour >= 9 & run_hour < 22, 3, 2)
 
 scale_app(n_containers)
 
