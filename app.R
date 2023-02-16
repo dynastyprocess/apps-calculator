@@ -1,5 +1,7 @@
 dpbucket <- aws.s3::get_bucket(bucket = 'dpcalc', region = "")
 prefill <- aws.s3::s3readRDS("values/prefill.rds", bucket = dpbucket, region = "")
+df_players <- aws.s3::s3readRDS("values/players.rds", bucket = dpbucket, region = "")
+df_picks <- aws.s3::s3readRDS("values/picks.rds", bucket = dpbucket, region = "")
 
 ui <- ui_mainpage(
   f7TabLayout(
@@ -179,19 +181,16 @@ server <- function(input, output, session) {
   })
 
   # Calculate Actual Values ----
-  df_players <- aws.s3::s3readRDS("values/players.rds", bucket = dpbucket, region = "")
-  df_picks <- aws.s3::s3readRDS("values/picks.rds", bucket = dpbucket, region = "")
-
   rv <- reactiveValues()
 
   rv$values <- values_generate(df_players, df_picks)
 
   triggers <- reactive({paste(input$qb_type,
-                  input$teams,
-                  input$value_factor,
-                  input$rookie_optimism,
-                  input$draft_type,
-                  input$future_factor)})
+                              input$teams,
+                              input$value_factor,
+                              input$rookie_optimism,
+                              input$draft_type,
+                              input$future_factor)})
 
   triggers <- debounce(triggers,500)
 
@@ -388,23 +387,29 @@ server <- function(input, output, session) {
         teamB_total = teamB_total(),
         stringsAsFactors = FALSE
       )
+      aws.s3::s3write_using(
+        saved_data,
+        data.table::fwrite,
+        object = glue::glue("trade_log/{tradeID}.csv"),
+        bucket = dpbucket,
+        opts = list(region = "")
+      )
 
-      aws.s3::s3saveRDS(saved_data,object = glue::glue("trades/{tradeID}.rds"),bucket = dpbucket, region = "")
     })
   })
-    observeEvent(
-      eventExpr = TRUE,{
+  observeEvent(
+    eventExpr = TRUE,{
 
-        all_cookies <- fetch_cookies()
+      all_cookies <- fetch_cookies()
 
-        if(!is.null(all_cookies[["dp_qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["dp_qb_type"]])
-        if(!is.null(all_cookies[["dp_teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["dp_teams"]])
-        if(!is.null(all_cookies[["dp_draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["dp_draft_type"]])
-        if(!is.null(all_cookies[["dp_value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["dp_value_factor"]]))
-        if(!is.null(all_cookies[["dp_rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["dp_rookie_optimism"]]))
-        if(!is.null(all_cookies[["dp_future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["dp_future_factor"]]))
+      if(!is.null(all_cookies[["dp_qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["dp_qb_type"]])
+      if(!is.null(all_cookies[["dp_teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["dp_teams"]])
+      if(!is.null(all_cookies[["dp_draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["dp_draft_type"]])
+      if(!is.null(all_cookies[["dp_value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["dp_value_factor"]]))
+      if(!is.null(all_cookies[["dp_rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["dp_rookie_optimism"]]))
+      if(!is.null(all_cookies[["dp_future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["dp_future_factor"]]))
 
-      }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
+    }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
 
 } # end of server segment ----
 
