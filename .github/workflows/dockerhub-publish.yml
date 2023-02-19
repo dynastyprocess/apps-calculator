@@ -30,6 +30,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Pull old images
+        run: |
+          docker pull tanho63/dpcalc:latest
+
       # Add parsing of R DESCRIPTION version here to create version-tag?
       - name: Build and push
         uses: docker/build-push-action@v3
