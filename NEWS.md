@@ -1,3 +1,11 @@
+# DPTC 3.1.4
+
+-   Revert changes from DPTC 3.1.2 
+
+# DPTC 3.1.3
+
+-   Save trade logs as CSVs 
+
 # DPTC 3.1.2
 
 -   Load data from bucket inside each session rather than globals. Reduces need to restart?

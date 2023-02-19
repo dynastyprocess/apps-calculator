@@ -1,7 +1,8 @@
 dpbucket <- aws.s3::get_bucket(bucket = 'dpcalc', region = "")
-prefill <- aws.s3::s3readRDS("values/prefill.rds", bucket = dpbucket, region = "")
+
 df_players <- aws.s3::s3readRDS("values/players.rds", bucket = dpbucket, region = "")
 df_picks <- aws.s3::s3readRDS("values/picks.rds", bucket = dpbucket, region = "")
+prefill <- aws.s3::s3readRDS("values/prefill.rds", bucket = dpbucket, region = "")
 
 ui <- ui_mainpage(
   f7TabLayout(
@@ -128,7 +129,7 @@ ui <- ui_mainpage(
         dp_donations(),
         br(),
         f7Card(
-          textOutput("update_date")
+          glue("ECR last updated: {df_players$scrape_date[[1]]}")
         ),
         br(),
         f7Card(
@@ -181,16 +182,17 @@ server <- function(input, output, session) {
   })
 
   # Calculate Actual Values ----
+
   rv <- reactiveValues()
 
-  rv$values <- values_generate(df_players, df_picks)
+  rv$values <- prefill
 
   triggers <- reactive({paste(input$qb_type,
-                              input$teams,
-                              input$value_factor,
-                              input$rookie_optimism,
-                              input$draft_type,
-                              input$future_factor)})
+                  input$teams,
+                  input$value_factor,
+                  input$rookie_optimism,
+                  input$draft_type,
+                  input$future_factor)})
 
   triggers <- debounce(triggers,500)
 
@@ -337,12 +339,12 @@ server <- function(input, output, session) {
   value_display <- reactive({
     if(!isTruthy(input$value_search)) return(rv$values)
     v <- rv$values
-    v[grepl(pattern = tolower(input$value_search), x = tolower(Player), fixed = TRUE),]
+    v[grepl(pattern = tolower(input$value_search),x = tolower(Player),fixed = TRUE)]
   })
 
   output$values <- renderUI({
     div(
-      f7Table(value_display(), card = TRUE),
+      f7Table(value_display(),card = TRUE),
       ui_spacer()
     )
   })
@@ -354,8 +356,6 @@ server <- function(input, output, session) {
     text = glue("ECR last updated {df_players$scrape_date[[1]]}"),
     position = "bottom",
     closeTimeout = 3000)
-
-  output$update_date <- renderText(glue("ECR last updated: {df_players$scrape_date[[1]]}"))
 
   # Save data to a sqlite file on server ----
 
@@ -387,29 +387,31 @@ server <- function(input, output, session) {
         teamB_total = teamB_total(),
         stringsAsFactors = FALSE
       )
+
+
       aws.s3::s3write_using(
         saved_data,
         data.table::fwrite,
-        object = glue::glue("trade_log/{tradeID}.csv"),
+        object = glue::glue("logs/{tradeID}.csv"),
         bucket = dpbucket,
         opts = list(region = "")
       )
 
     })
   })
-  observeEvent(
-    eventExpr = TRUE,{
+    observeEvent(
+      eventExpr = TRUE,{
 
-      all_cookies <- fetch_cookies()
+        all_cookies <- fetch_cookies()
 
-      if(!is.null(all_cookies[["dp_qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["dp_qb_type"]])
-      if(!is.null(all_cookies[["dp_teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["dp_teams"]])
-      if(!is.null(all_cookies[["dp_draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["dp_draft_type"]])
-      if(!is.null(all_cookies[["dp_value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["dp_value_factor"]]))
-      if(!is.null(all_cookies[["dp_rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["dp_rookie_optimism"]]))
-      if(!is.null(all_cookies[["dp_future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["dp_future_factor"]]))
+        if(!is.null(all_cookies[["dp_qb_type"]])) updateF7SmartSelect("qb_type",selected = all_cookies[["dp_qb_type"]])
+        if(!is.null(all_cookies[["dp_teams"]])) updateF7SmartSelect("teams",selected = all_cookies[["dp_teams"]])
+        if(!is.null(all_cookies[["dp_draft_type"]])) updateF7SmartSelect("draft_type",selected = all_cookies[["dp_draft_type"]])
+        if(!is.null(all_cookies[["dp_value_factor"]])) updateF7Slider("value_factor", value = as.numeric(all_cookies[["dp_value_factor"]]))
+        if(!is.null(all_cookies[["dp_rookie_optimism"]])) updateF7Slider("rookie_optimism", value = as.numeric(all_cookies[["dp_rookie_optimism"]]))
+        if(!is.null(all_cookies[["dp_future_factor"]])) updateF7Slider("future_factor", value = as.numeric(all_cookies[["dp_future_factor"]]))
 
-    }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
+      }, ignoreInit = FALSE, ignoreNULL = FALSE, once = TRUE)
 
 } # end of server segment ----
 
