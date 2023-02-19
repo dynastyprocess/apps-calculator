@@ -3,8 +3,8 @@ ui_mainpage <- function(...){
   f7Page(
     title = "DynastyProcess Trade Calculator",
     # manifest = "manifest.json",
-    favicon = "favicon.ico",
-    icon = '128x128.png',
+    # favicon = "favicon.ico",
+    # icon = '128x128.png',
     allowPWA = TRUE,
     # preloader = TRUE,
     # loading_duration = 3,

@@ -1,6 +1,6 @@
 Package: DynastyProcessTradeCalculator
 Title: A Customizable Dynasty Trade Calculator
-Version: 3.1.4
+Version: 3.1.5
 Authors@R: 
     person(given = "Tan",
            family = "Ho",
@@ -28,7 +28,6 @@ Imports:
     uuid
 Remotes: 
     tanho63/joker,
-    tanho63/shinyMobile@rc-1.0.0,
     RinteRface/mobileCharts,
     colinfay/glouton
 URL: https://github.com/dynastyprocess/apps-calculator
