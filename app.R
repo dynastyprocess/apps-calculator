@@ -392,7 +392,7 @@ server <- function(input, output, session) {
       aws.s3::s3write_using(
         saved_data,
         data.table::fwrite,
-        object = glue::glue("logs/{tradeID}.csv"),
+        object = glue::glue("logs/year={format(Sys.Date(),'%Y')}/month={format(Sys.Date(),'%m')}/{tradeID}.csv"),
         bucket = dpbucket,
         opts = list(region = "")
       )

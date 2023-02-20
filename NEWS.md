@@ -1,3 +1,11 @@
+# DPTC 3.1.6 
+
+- Add hive-style partitioning to CSVs so that it's grouped by year and month.
+
+# DPTC 3.1.5
+
+-   Revert reverted changes from DPTC, it wasn't a code problem it was a dependency issue with shinyMobile. Fixed by bumping to CRAN version.
+
 # DPTC 3.1.4
 
 -   Revert changes from DPTC 3.1.2 
