@@ -1,7 +1,7 @@
 on:
   schedule:
     - cron: 25 3 * * *
-    #- cron: 45 12 * * *
+    - cron: 45 12 * * *
   workflow_dispatch:
 
 name: scale_app_containers
