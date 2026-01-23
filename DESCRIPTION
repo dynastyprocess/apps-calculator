@@ -29,6 +29,7 @@ Imports:
 Remotes: 
     tanho63/joker,
     RinteRface/mobileCharts,
-    colinfay/glouton
+    colinfay/glouton,
+    qsbase/qs
 URL: https://github.com/dynastyprocess/apps-calculator
 BugReports: https://github.com/dynastyprocess/apps-calculator/issues
