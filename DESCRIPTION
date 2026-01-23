@@ -21,6 +21,7 @@ Imports:
     markdown,
     metathis,
     mobileCharts,
+    qs,
     sever,
     shiny,
     shinyMobile,
