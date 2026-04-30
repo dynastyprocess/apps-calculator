@@ -21,7 +21,6 @@ Imports:
     markdown,
     metathis,
     mobileCharts,
-    qs,
     sever,
     shiny,
     shinyMobile,
@@ -30,7 +29,6 @@ Imports:
 Remotes: 
     tanho63/joker,
     RinteRface/mobileCharts,
-    colinfay/glouton,
-    qsbase/qs
+    colinfay/glouton
 URL: https://github.com/dynastyprocess/apps-calculator
 BugReports: https://github.com/dynastyprocess/apps-calculator/issues
